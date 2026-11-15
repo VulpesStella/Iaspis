@@ -1,0 +1,190 @@
+package io.github.vulpesstella.iaspis.compat;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import cpw.mods.fml.common.network.IPacketHandler;
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.common.network.Player;
+import io.github.vulpesstella.iaspis.Iaspis;
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.INetworkManager;
+import net.minecraft.network.packet.Packet250CustomPayload;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
+import net.minecraft.world.World;
+
+public final class TargetDataChannel implements IPacketHandler {
+    public static final String NAME = "IaspisData";
+    private static final int MAX_PACKET = 30000;
+    private static final int REQUEST_SIZE = 21;
+    private static final long MIN_INTERVAL = 150000000L;
+    private final Map<EntityPlayerMP, Long> lastRequest = new WeakHashMap<EntityPlayerMP, Long>();
+
+    public static boolean canRequest(EntityPlayer player) {
+        return NetworkRegistry.instance().isChannelActive(NAME, (Player) player);
+    }
+
+    public static void request(Target target, int sequence) {
+        MovingObjectPosition hit = target.getPosition();
+        boolean entity = target.getEntity() != null;
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(REQUEST_SIZE);
+        DataOutputStream out = new DataOutputStream(bytes);
+        try {
+            out.writeInt(sequence);
+            out.writeInt(target.getPlayer().dimension);
+            out.writeBoolean(entity);
+            out.writeInt(entity ? target.getEntity().entityId : hit.blockX);
+            out.writeInt(entity ? 0 : hit.blockY);
+            out.writeInt(entity ? 0 : hit.blockZ);
+            PacketDispatcher.sendPacketToServer(new Packet250CustomPayload(NAME, bytes.toByteArray()));
+        } catch (IOException e) {
+            WailaBridge.INSTANCE.report("Could not encode Iaspis target request", e);
+        }
+    }
+
+    @Override
+    public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
+        if (packet.data == null || packet.data.length > MAX_PACKET) return;
+        DataInputStream input = new DataInputStream(new ByteArrayInputStream(packet.data));
+        try {
+            int sequence = input.readInt();
+            if (!(player instanceof EntityPlayerMP)) {
+                NBTTagCompound data = CompressedStreamTools.read(input);
+                InventoryPreview inventory = InventoryPreview.EMPTY;
+                // Older Iaspis servers end the response after the legacy NBT compound.
+                if (input.available() > 0) {
+                    if (!input.readBoolean()) data = null;
+                    inventory = InventoryPreview.read(input);
+                }
+                Iaspis.proxy.receiveTargetData(sequence, data, inventory);
+                return;
+            }
+            if (packet.data.length != REQUEST_SIZE) return;
+            EntityPlayerMP sender = (EntityPlayerMP) player;
+            int dimension = input.readInt();
+            if (sender.dimension != dimension || !permitRequest(sender)) return;
+            boolean entity = input.readBoolean();
+            int x = input.readInt();
+            int y = input.readInt();
+            int z = input.readInt();
+            if (!entity) {
+                sendBlockData(sender, sequence, x, y, z);
+                return;
+            }
+            NBTTagCompound data = entityData(sender, x);
+            if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY);
+        } catch (IOException e) {
+            WailaBridge.INSTANCE.report("Invalid Iaspis target data packet", e);
+        } catch (RuntimeException e) {
+            WailaBridge.INSTANCE.report("Could not read Iaspis target data", e);
+        }
+    }
+
+    private static void sendResponse(EntityPlayerMP player, int sequence, NBTTagCompound tag,
+                                     InventoryPreview inventory) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream output = new DataOutputStream(bytes);
+        output.writeInt(sequence);
+        CompressedStreamTools.write(tag == null ? new NBTTagCompound() : tag, output);
+        output.writeBoolean(tag != null);
+        inventory.write(output);
+        if (bytes.size() > MAX_PACKET) {
+            if (inventory != InventoryPreview.EMPTY) sendResponse(player, sequence, null, inventory);
+            return;
+        }
+        PacketDispatcher.sendPacketToPlayer(new Packet250CustomPayload(NAME, bytes.toByteArray()), (Player) player);
+    }
+
+    private boolean permitRequest(EntityPlayerMP player) {
+        long now = System.nanoTime();
+        Long last = lastRequest.get(player);
+        if (last != null && now - last < MIN_INTERVAL) return false;
+        lastRequest.put(player, now);
+        return true;
+    }
+
+    private static void sendBlockData(EntityPlayerMP player, int sequence, int x, int y, int z) throws IOException {
+        World world = player.worldObj;
+        if (player.getDistanceSq(x + 0.5, y + 0.5, z + 0.5) > 64 || !world.blockExists(x, y, z)) return;
+        TileEntity tile = world.getBlockTileEntity(x, y, z);
+        if (tile == null) return;
+
+        Vec3 eyes = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+        Vec3 center = Vec3.createVectorHelper(x + 0.5, y + 0.5, z + 0.5);
+        MovingObjectPosition hit = world.rayTraceBlocks_do_do(eyes, center, false, true);
+        if (hit == null || hit.blockX != x || hit.blockY != y || hit.blockZ != z) return;
+
+        int id = world.getBlockId(x, y, z);
+        Block block = Block.blocksList[id];
+        WailaBridge bridge = WailaBridge.INSTANCE;
+        List<String> keys = bridge.syncedKeys(id, block, tile);
+        NBTTagCompound data = null;
+        if (!keys.isEmpty()) {
+            NBTTagCompound full = new NBTTagCompound();
+            tile.writeToNBT(full);
+            data = select(full, keys);
+        }
+        InventoryPreview inventory = InventoryPreview.EMPTY;
+        if (tile instanceof IInventory && bridge.getConfig("inventory.preview")) {
+            try {
+                inventory = InventoryPreview.collect(player, block, tile);
+            } catch (RuntimeException e) {
+                bridge.report("Inventory preview for " + tile.getClass().getName(), e);
+            } catch (LinkageError e) {
+                bridge.report("Inventory preview for " + tile.getClass().getName(), e);
+            }
+        }
+        sendResponse(player, sequence, data, inventory);
+    }
+
+    private static NBTTagCompound entityData(EntityPlayerMP player, int id) {
+        Entity entity = player.worldObj.getEntityByID(id);
+        if (entity == null || entity instanceof EntityPlayer || player.getDistanceSqToEntity(entity) > 64
+                || !player.canEntityBeSeen(entity)) return null;
+        List<String> keys = WailaBridge.INSTANCE.syncedKeys(-1, entity, null);
+        if (keys.isEmpty()) return null;
+        NBTTagCompound data = new NBTTagCompound();
+        entity.writeToNBT(data);
+        return select(data, keys);
+    }
+
+    private static NBTTagCompound select(NBTTagCompound source, List<String> keys) {
+        NBTTagCompound result = new NBTTagCompound();
+        for (String key : keys) copyPath(source, result, key);
+        return result;
+    }
+
+    private static void copyPath(NBTTagCompound source, NBTTagCompound result, String path) {
+        int separator = path.indexOf('.');
+        String key = separator < 0 ? path : path.substring(0, separator);
+        if ("*".equals(key) && separator < 0) {
+            for (Object entry : source.getTags()) {
+                NBTBase tag = (NBTBase) entry;
+                result.setTag(tag.getName(), tag.copy());
+            }
+        } else if (separator < 0) {
+            NBTBase tag = source.getTag(key);
+            if (tag != null) result.setTag(key, tag.copy());
+        } else if (source.getTag(key) instanceof NBTTagCompound) {
+            NBTTagCompound nested = result.getCompoundTag(key);
+            copyPath(source.getCompoundTag(key), nested, path.substring(separator + 1));
+            result.setCompoundTag(key, nested);
+        }
+    }
+}

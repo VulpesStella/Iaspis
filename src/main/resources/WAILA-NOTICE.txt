@@ -1,0 +1,4 @@
+The mcp.mobius.waila.api interfaces are from WAILA by ProfMobius.
+Source: https://github.com/Choonster-Minecraft-Mods/ProfMobius-Waila/tree/d6de00542d58c8cadce2e00d27535e7b259c0ea7
+These interfaces are distributed under the Apache License, Version 2.0.
+See WAILA-LICENSE.txt.

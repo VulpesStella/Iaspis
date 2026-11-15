@@ -1,58 +1,37 @@
-# Retrospectum Mod Template
+# Iaspis
 
-Starter project for Minecraft 1.6.4 / Forge 9.11.1.1345 with Retrospectum Loom
-and the shared Retrospectum Mixin bootstrap.
+Iaspis brings Jade-style tooltips to Minecraft 1.6.4. Look at a block or entity to see what it is, which mod it belongs to, and details such as entity health, crop growth, and furnace progress.
 
-## Start
+Entity health uses full, half, and empty hearts. Armor uses armor icons. Large values use an icon with a compact number, and furnaces show input and fuel slots, a progress arrow, and an output slot.
 
-1. Use this template, clone it, and run setup.
-2. Edit mod metadata in `gradle.properties` and the project name in `settings.gradle`.
-3. Build and generate IDE configurations:
+## Installation
 
-   ```powershell
-   # Windows x64, PowerShell 5.1+
-   ./setup.ps1
-   ./build.ps1 build genSources genIdeaRuns
-   ```
+1. Install Minecraft Forge 9.11.1.1345 for Minecraft 1.6.4.
+2. Remove WAILA from the instance and place the Iaspis release JAR in `mods/`.
+3. Press **Numpad 1** in game to toggle the overlay. Change the binding in Controls.
 
-   ```sh
-   # Linux x86_64 with glibc, Bash, curl, tar and GNU utilities
-   ./setup.sh
-   ./build.sh build genSources genIdeaRuns
-   ```
+Forge lists **Iaspis** (`iaspis`) and **Iaspis WAILA Compatibility** (`Waila`). Both entries come from the same JAR. Install Iaspis on the server as well to enable server-side target data.
 
-4. Open the project in IntelliJ IDEA, select JDK 17 for its Gradle JVM, and let
-   Gradle import finish. Start the generated Retrospectum client/server Gradle
-   configuration, or run `./build.ps1 runClient` (`./build.sh runClient` on Linux).
-5. Distribute `build/libs/<mod_id>-retrospectum-1.6.4-<version>.jar` and require
-   Retrospectum Mixin alongside it. The `-dev.jar` is for development only.
+The overlay smoothly resizes when the target changes. Use `overlay.animation` in `config/iaspis.cfg` to turn off the transition.
 
-If Windows blocks the script, invoke it with
-`powershell -NoProfile -ExecutionPolicy Bypass -File ./setup.ps1` (and similarly
-for `build.ps1`). This changes policy only for that invocation.
+## Harvesting and inventory
 
-JDK 17 runs Gradle, JDK 8 compiles/AP, and Java 7 or 8 runs the game. Setup finds
-installed JDKs or installs pinned, verified packages under project `.jdks/`.
-Machine-local paths are recorded in ignored files; setup creates no global SDK links.
-macOS, ARM and musl Linux are outside the supported setup/test matrix.
+The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold your Sneak key (Left Shift by default) to expand container previews from 9 to 27 item stacks.
 
-## Automated builds
+Container previews show item icons and stack counts. In multiplayer, install Iaspis on the server for containers whose contents are unavailable to the client. The `inventory.preview` setting in `config/iaspis.cfg` controls previews on the client and whether the server shares inventory data. Use `harvest.enabled` to toggle harvest hints.
 
-The **Build mod** GitHub Actions workflow runs on pushes and pull requests, and
-can also be started manually. It builds this project using the Loom and Mixin
-versions in `gradle.properties`, with Java 7 APIs, the Java 8 compiler and Gradle
-on Java 17.
+## WAILA integrations
 
-Download `mod-<commit SHA>` from the workflow run's **Artifacts** section to get
-the distributable SRG JAR. Development (`-dev.jar`) archives are excluded.
-Artifacts are retained for 14 days. Failed builds upload available reports
-for 7 days. Install Retrospectum Mixin separately alongside the mod.
+Iaspis implements the startup IMC and block and entity provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. Provider options are available in `config/iaspis.cfg`.
 
-## Next steps
+Forge Multipart-specific providers, WAILA documentation hooks, and server-locked configuration are outside the current compatibility scope.
 
-- [Development, Mixin mapping and local toolchain verification](docs/DEVELOPMENT.md)
-- [Compatibility](docs/COMPATIBILITY.md), [troubleshooting](docs/TROUBLESHOOTING.md)
-- [Loom reference](https://github.com/DesideriumMC/RetrospectumLoom/blob/main/docs/REFERENCE.md)
+## Building
 
-MIT; see [LICENSE](LICENSE). Keep upstream notices and choose the appropriate
-license and copyright statement for your own mod before publishing it.
+The Retrospectum Loom build uses Java 17 for Gradle, Java 8 for compilation, and a Java 7 API baseline. Run `./setup.ps1` followed by `./build.ps1 build` on Windows, or `./setup.sh` and `./build.sh build` on Linux. Use the JAR in `build/libs/` whose name ends in the version number before `.jar`.
+
+Run `./build.ps1 runClient` or `./build.ps1 runServer` for development launches. On Linux, use `./build.sh` with the same tasks.
+
+## Acknowledgments
+
+Iaspis is inspired by [Jade](https://github.com/Snownee/Jade). The legacy API declarations come from [WAILA by ProfMobius](https://github.com/Choonster-Minecraft-Mods/ProfMobius-Waila/tree/d6de00542d58c8cadce2e00d27535e7b259c0ea7) and are distributed under the [Apache License 2.0](src/main/resources/WAILA-LICENSE.txt).
