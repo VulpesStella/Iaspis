@@ -26,9 +26,6 @@ iaspis.harvestability.tier.0=Wood
 iaspis.harvestability.tier.1=Stone
 iaspis.harvestability.tier.2=Iron
 iaspis.harvestability.tier.3=Redstone
-iaspis.harvestability.tier.4=Obsidian
-iaspis.harvestability.tier.5=Cobalt
-iaspis.harvestability.tier.6=Atlarus
 iaspis.details.hold=Hold %s for more details
 iaspis.inventory.truncated=More stacks in container
 

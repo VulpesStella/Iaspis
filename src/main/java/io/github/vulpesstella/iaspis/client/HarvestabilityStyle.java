@@ -46,7 +46,7 @@ final class HarvestabilityStyle {
             if (tool.level >= 0) {
                 if (tiers.length() > 0) tiers.append(RESET).append(", ");
                 if (hint.icons.size() > 1) tiers.append(toolName).append(' ');
-                tiers.append(color).append(tool.level <= 6 ? translate("tier." + tool.level) : Integer.toString(tool.level));
+                tiers.append(color).append(tierName(tool.level));
             }
         }
         lines.add(translate("effectiveTool") + " : " + tools);
@@ -102,6 +102,12 @@ final class HarvestabilityStyle {
 
     private static String translate(String key) {
         return StatCollector.translateToLocal("iaspis.harvestability." + key);
+    }
+
+    private static String tierName(int level) {
+        String key = "iaspis.harvestability.tier." + level;
+        String name = StatCollector.translateToLocal(key);
+        return key.equals(name) ? Integer.toString(level) : name;
     }
 
     private HarvestabilityStyle() {}

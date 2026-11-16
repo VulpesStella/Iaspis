@@ -26,9 +26,6 @@ iaspis.harvestability.tier.0=木质
 iaspis.harvestability.tier.1=石质
 iaspis.harvestability.tier.2=铁质
 iaspis.harvestability.tier.3=红石
-iaspis.harvestability.tier.4=黑曜石
-iaspis.harvestability.tier.5=钴
-iaspis.harvestability.tier.6=阿塔鲁斯
 iaspis.details.hold=按住 %s 查看更多详情
 iaspis.inventory.truncated=容器中还有更多物品堆
 
