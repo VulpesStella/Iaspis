@@ -1,0 +1,22 @@
+plugins {
+    id 'dev.desiderium.retro.loom'
+}
+
+group = 'io.github.vulpesstella.iaspis.example'
+version = '1.0'
+base.archivesName = 'iaspis-hud-example-1.6.4'
+
+repositories {
+    maven {
+        url = uri(providers.gradleProperty('retrospectumMavenUrl').getOrElse('https://maven.desiderium.dev/releases/'))
+        content { includeGroup 'dev.desiderium.retro' }
+    }
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.6.4'
+    forge 'net.minecraftforge:forge:1.6.4-9.11.1.1345:universal'
+    mappings 'net.minecraftforge:forge:1.6.4-9.11.1.1345:src@zip'
+    mixinBootstrap files(rootProject.configurations.mixinBootstrap)
+    modImplementation project(':')
+}

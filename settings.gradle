@@ -24,3 +24,7 @@ pluginManagement {
     if (checkout) includeBuild(checkout)
 }
 rootProject.name = 'iaspis'
+
+if (providers.gradleProperty('withHudExample').map { it.toBoolean() }.getOrElse(false)) {
+    include 'examples:hud-provider'
+}

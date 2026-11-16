@@ -86,6 +86,8 @@ Restart the server to apply edits. The **Extensions** screen shows locked modes 
 
 Use `tooltip.addComponent(component)` to add a visual row. Implement `HudComponent` in the same package and report its width and height in GUI pixels. Draw inside that rectangle from the supplied top-left coordinates. Iaspis lays out component rows in provider order above the inventory grid. Components appear in full and detailed tooltips.
 
+The [HUD example](examples/hud-provider) is a separate Forge mod that adds a signal meter to redstone wire. Build it with `./build.ps1 :examples:hud-provider:build -PwithHudExample=true` on Windows or the same arguments to `./build.sh` on Linux. Install the release JAR from `examples/hud-provider/build/libs/` alongside Iaspis on the client. Aim at redstone dust in the world to see its signal strength. Change **Redstone signal** under **Extensions** to try the provider modes.
+
 ## Building
 
 The Retrospectum Loom build uses Java 17 for Gradle, Java 8 for compilation, and a Java 7 API baseline. Run `./setup.ps1` followed by `./build.ps1 build` on Windows, or `./setup.sh` and `./build.sh build` on Linux. Use the JAR in `build/libs/` whose name ends in the version number before `.jar`.
