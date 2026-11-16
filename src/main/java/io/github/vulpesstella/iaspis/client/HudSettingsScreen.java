@@ -7,6 +7,7 @@ import java.util.List;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import io.github.vulpesstella.iaspis.compat.HudProviderRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -116,10 +117,10 @@ final class HudSettingsScreen extends GuiScreen {
         }
         contentHeight = contentTop;
         int footerWidth = Math.min(120, settingsWidth);
-        if (!WailaBridge.INSTANCE.getModuleNames().isEmpty()) {
+        if (!WailaBridge.INSTANCE.getModuleNames().isEmpty() || !HudProviderRegistry.settings().isEmpty()) {
             footerWidth = Math.min(footerWidth, (width - 2 * MARGIN - 2 * GAP) / 3);
             buttonList.add(new GuiButton(WAILA, (width - footerWidth) / 2, height - 29,
-                    footerWidth, BUTTON_HEIGHT, translate("iaspis.waila.settings")));
+                    footerWidth, BUTTON_HEIGHT, translate("iaspis.extensions.settings")));
         }
         buttonList.add(new GuiButton(RESET, MARGIN, height - 29, footerWidth, BUTTON_HEIGHT, translate("iaspis.settings.reset")));
         buttonList.add(new GuiButton(DONE, width - MARGIN - footerWidth, height - 29,

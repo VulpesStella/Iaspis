@@ -17,6 +17,7 @@ public final class IaspisConfig {
 
     public static final String TANK_DISPLAY = "tank.display";
     private static final String DISPLAY = "display";
+    private static final String HUD_PROVIDERS = "hud_providers";
     private final Configuration file;
     private final Map<String, Boolean> booleans = new HashMap<String, Boolean>();
 
@@ -61,6 +62,18 @@ public final class IaspisConfig {
 
     public DisplayMode getTankDisplay() {
         return DisplayMode.values()[getInt(TANK_DISPLAY, DisplayMode.ON.ordinal(), 0, DisplayMode.DETAILS.ordinal())];
+    }
+
+    public synchronized DisplayMode getHudProviderMode(String id) {
+        int fallback = DisplayMode.ON.ordinal();
+        if (!file.hasKey(HUD_PROVIDERS, id)) return DisplayMode.ON;
+        int value = file.get(HUD_PROVIDERS, id, fallback).getInt(fallback);
+        return value >= 0 && value < DisplayMode.values().length ? DisplayMode.values()[value] : DisplayMode.ON;
+    }
+
+    public synchronized void setHudProviderMode(String id, DisplayMode mode) {
+        file.get(HUD_PROVIDERS, id, DisplayMode.ON.ordinal()).set(mode.ordinal());
+        save();
     }
 
     public synchronized boolean isWailaOptionLocked(String key) {

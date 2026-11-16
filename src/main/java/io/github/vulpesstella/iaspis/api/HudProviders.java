@@ -29,6 +29,21 @@ public final class HudProviders {
      * and icon overrides. Ties follow registration order.
      */
     public static void register(Class<?> type, int priority, Provider provider) {
-        HudProviderRegistry.register(type, priority, provider);
+        HudProviderRegistry.register(null, null, type, priority, provider);
+    }
+
+    /**
+     * Registers a provider with a player setting, initially On. Use a stable ID prefixed with
+     * your mod ID (for example, "example:machine_status"). Registrations sharing an ID use
+     * the same setting. The label is translated using the client's language.
+     */
+    public static void register(String id, String label, Class<?> type, int priority, Provider provider) {
+        if (id == null || !id.matches("[a-z0-9_]+:[a-z0-9_.-]+")) {
+            throw new IllegalArgumentException("Expected a namespaced HUD provider ID");
+        }
+        if (label == null || label.trim().isEmpty()) {
+            throw new IllegalArgumentException("A HUD provider label is required");
+        }
+        HudProviderRegistry.register(id, label, type, priority, provider);
     }
 }

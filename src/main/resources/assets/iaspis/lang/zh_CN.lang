@@ -1,5 +1,9 @@
 key.iaspis.toggle=切换 Iaspis 提示
-iaspis.waila.settings=WAILA 扩展
+iaspis.extensions.settings=扩展
+iaspis.extensions.providers=Iaspis 扩展
+iaspis.extensions.mode.0=关
+iaspis.extensions.mode.1=开
+iaspis.extensions.mode.2=仅详情
 iaspis.waila.locked=%s（服务端）
 iaspis.growth=成熟度：%s%%
 iaspis.health=%.1f / %.1f

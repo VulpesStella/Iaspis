@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
+import io.github.vulpesstella.iaspis.compat.HudProviderRegistry;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -14,6 +16,7 @@ import net.minecraft.util.StatCollector;
 
 final class WailaSettingsScreen extends GuiScreen {
     private static final WailaBridge BRIDGE = WailaBridge.INSTANCE;
+    private static final DisplayMode[] DISPLAY_MODES = DisplayMode.values();
     private final GuiScreen parent;
     private final List<OptionRow> rows = new ArrayList<OptionRow>();
     private GuiSlot options;
@@ -26,10 +29,17 @@ final class WailaSettingsScreen extends GuiScreen {
     @SuppressWarnings("unchecked")
     public void initGui() {
         rows.clear();
+        Map<String, String> nativeProviders = HudProviderRegistry.settings();
+        if (!nativeProviders.isEmpty()) {
+            rows.add(new OptionRow(null, translate("iaspis.extensions.providers"), true));
+            for (Map.Entry<String, String> entry : nativeProviders.entrySet()) {
+                rows.add(new OptionRow(entry.getKey(), translate(entry.getValue()), true));
+            }
+        }
         for (String module : BRIDGE.getModuleNames()) {
-            rows.add(new OptionRow(null, module));
+            rows.add(new OptionRow(null, module, false));
             for (Map.Entry<String, String> entry : BRIDGE.getConfigKeys(module).entrySet()) {
-                rows.add(new OptionRow(entry.getKey(), entry.getValue()));
+                rows.add(new OptionRow(entry.getKey(), entry.getValue(), false));
             }
         }
         buttonList.clear();
@@ -39,9 +49,14 @@ final class WailaSettingsScreen extends GuiScreen {
 
             protected void elementClicked(int rowIndex, boolean doubleClick) {
                 OptionRow row = rows.get(rowIndex);
-                if (row.key == null || locked(row.key) || doubleClick) return;
-                Iaspis.config().setBoolean(row.key, !BRIDGE.getConfig(row.key));
-                Iaspis.config().save();
+                if (row.key == null || locked(row) || doubleClick) return;
+                if (row.nativeProvider) {
+                    DisplayMode current = Iaspis.config().getHudProviderMode(row.key);
+                    Iaspis.config().setHudProviderMode(row.key, DISPLAY_MODES[(current.ordinal() + 1) % DISPLAY_MODES.length]);
+                } else {
+                    Iaspis.config().setBoolean(row.key, !BRIDGE.getConfig(row.key));
+                    Iaspis.config().save();
+                }
             }
 
             protected boolean isSelected(int rowIndex) { return false; }
@@ -54,8 +69,10 @@ final class WailaSettingsScreen extends GuiScreen {
                     drawString(fontRenderer, row.label, x, y + 6, 0xffbcade8);
                     return;
                 }
-                boolean locked = locked(row.key);
-                String value = translate(BRIDGE.getConfig(row.key) ? "options.on" : "options.off");
+                boolean locked = locked(row);
+                String value = row.nativeProvider
+                        ? translate("iaspis.extensions.mode." + Iaspis.config().getHudProviderMode(row.key).ordinal())
+                        : translate(BRIDGE.getConfig(row.key) ? "options.on" : "options.off");
                 if (locked) value = StatCollector.translateToLocalFormatted("iaspis.waila.locked", value);
                 int valueX = x + 210 - fontRenderer.getStringWidth(value);
                 drawString(fontRenderer, fontRenderer.trimStringToWidth(row.label, Math.max(1, valueX - x - 16)),
@@ -65,8 +82,9 @@ final class WailaSettingsScreen extends GuiScreen {
         };
     }
 
-    private static boolean locked(String key) {
-        return BRIDGE.forcedOption(key) != null || (BRIDGE.requiresServer(key) && !Iaspis.proxy.hasWailaServer());
+    private static boolean locked(OptionRow row) {
+        return !row.nativeProvider && (BRIDGE.forcedOption(row.key) != null
+                || (BRIDGE.requiresServer(row.key) && !Iaspis.proxy.hasWailaServer()));
     }
 
     @Override
@@ -81,7 +99,7 @@ final class WailaSettingsScreen extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         options.drawScreen(mouseX, mouseY, partialTicks);
-        drawCenteredString(fontRenderer, translate("iaspis.waila.settings"), width / 2, 12, 0xffffffff);
+        drawCenteredString(fontRenderer, translate("iaspis.extensions.settings"), width / 2, 12, 0xffffffff);
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
@@ -90,10 +108,12 @@ final class WailaSettingsScreen extends GuiScreen {
     private static final class OptionRow {
         final String key;
         final String label;
+        final boolean nativeProvider;
 
-        OptionRow(String key, String label) {
+        OptionRow(String key, String label, boolean nativeProvider) {
             this.key = key;
             this.label = label;
+            this.nativeProvider = nativeProvider;
         }
     }
 }
