@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import io.github.vulpesstella.iaspis.api.HudComponent;
 import io.github.vulpesstella.iaspis.api.HudProviders;
 import io.github.vulpesstella.iaspis.api.HudTarget;
 import net.minecraft.item.ItemStack;
@@ -45,6 +46,7 @@ public final class HudProviderRegistry {
             if (result.name == null) result.name = changes.name;
             if (result.icon == null) result.icon = changes.icon;
             result.lines.addAll(changes.lines);
+            result.components.addAll(changes.components);
         }
         return result;
     }
@@ -74,6 +76,7 @@ public final class HudProviderRegistry {
         public String name;
         public ItemStack icon;
         public final List<String> lines = new ArrayList<String>();
+        public final List<HudComponent> components = new ArrayList<HudComponent>();
         public boolean hidden;
 
         @Override
@@ -87,6 +90,11 @@ public final class HudProviderRegistry {
         @Override
         public void addLine(String line) {
             if (line != null && !line.isEmpty()) lines.add(line);
+        }
+
+        @Override
+        public void addComponent(HudComponent component) {
+            if (component != null) components.add(component);
         }
 
         @Override

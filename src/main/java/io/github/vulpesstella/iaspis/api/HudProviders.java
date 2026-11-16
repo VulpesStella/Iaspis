@@ -17,6 +17,8 @@ public final class HudProviders {
         void setIcon(ItemStack icon);
         /** Adds a body line, shown when the HUD is displaying its body. */
         void addLine(String line);
+        /** Adds a measured visual row, shown when the HUD is displaying its body. */
+        void addComponent(HudComponent component);
         /** Suppresses the tooltip for this target immediately. */
         void hide();
     }

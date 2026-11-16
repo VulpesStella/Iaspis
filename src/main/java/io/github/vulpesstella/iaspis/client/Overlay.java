@@ -264,15 +264,18 @@ public final class Overlay extends Gui {
         for (VanillaEntityDetails.EffectLine effect : tooltip.effects) {
             effectsWidth = Math.max(effectsWidth, SLOT_SIZE + 4 + game.fontRenderer.getStringWidth(effect.label));
         }
-        int width = Math.max(Math.max(headerWidth, columns * SLOT_SIZE),
+        HudComponentLayout components = HudComponentLayout.measure(tooltip.components, game.fontRenderer);
+        int baseWidth = Math.max(Math.max(headerWidth, columns * SLOT_SIZE),
                 Math.max(Math.max(harvestWidth, furnaceWidth),
                         Math.max(Math.max(healthWidth, armorWidth),
-                                Math.max(Math.max(tankWidth, machineWidth), effectsWidth)))) + 12;
+                                Math.max(Math.max(tankWidth, machineWidth), effectsWidth))));
+        int width = Math.max(baseWidth, components.width) + 12;
         int height = headerHeight + harvestHeight + rows * SLOT_SIZE + 10
                 + (healthRows + extraHealthRows + armorRows) * VITAL_ROW_HEIGHT
                 + (furnaceWidth > 0 ? SLOT_SIZE : 0) + tankLabels.size() * tankHeight
                 + (energyLabel == null ? 0 : meterRowHeight(true)) + (progressLabel == null ? 0 : SLOT_SIZE)
-                + (itemDetailWidth == 0 ? 0 : SLOT_SIZE) + tooltip.effects.size() * EFFECT_ROW_HEIGHT;
+                + (itemDetailWidth == 0 ? 0 : SLOT_SIZE) + tooltip.effects.size() * EFFECT_ROW_HEIGHT
+                + components.height;
         if (sample == PreviewSample.ANCHOR_Y) {
             scale = Math.min(scale, areaHeight / (2.0F * (height + 8)));
             layoutWidth = (int) (areaWidth / scale);
@@ -408,6 +411,8 @@ public final class Overlay extends Gui {
                     game.fontRenderer.drawStringWithShadow(effect.label, left + 10 + SLOT_SIZE, detailTop + 6, 0xffffff);
                     detailTop += EFFECT_ROW_HEIGHT;
                 }
+                components.render(game.fontRenderer, left + 6, detailTop);
+                detailTop += components.height;
                 if (columns > 0) drawInventory(tooltip.inventory, columns, left + 6, detailTop, scale != 1);
                 if (breaking != null) drawBreakingProgress(breaking, bounds);
             } finally {

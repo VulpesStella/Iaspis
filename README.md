@@ -71,6 +71,8 @@ HudProviders.register(MyMachineTile.class, 100, new HudProviders.Provider() {
 
 Import `HudProviders` and `HudTarget` from `io.github.vulpesstella.iaspis.api`. The highest-priority provider that supplies a name or icon wins that override. Body lines from every provider appear in priority order below the standard details. Equal priorities follow registration order. `hide()` suppresses the HUD for the current target immediately.
 
+Use `tooltip.addComponent(component)` to add a visual row. Implement `HudComponent` in the same package and report its width and height in GUI pixels. Draw inside that rectangle from the supplied top-left coordinates. Iaspis lays out component rows in provider order above the inventory grid. Components appear in full and detailed tooltips.
+
 ## Building
 
 The Retrospectum Loom build uses Java 17 for Gradle, Java 8 for compilation, and a Java 7 API baseline. Run `./setup.ps1` followed by `./build.ps1 build` on Windows, or `./setup.sh` and `./build.sh build` on Linux. Use the JAR in `build/libs/` whose name ends in the version number before `.jar`.

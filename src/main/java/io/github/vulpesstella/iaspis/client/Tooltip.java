@@ -12,6 +12,7 @@ import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.api.HudComponent;
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.HudProviderRegistry.Changes;
 import io.github.vulpesstella.iaspis.compat.Target;
@@ -42,6 +43,7 @@ final class Tooltip {
     private static final WailaBridge BRIDGE = WailaBridge.INSTANCE;
 
     final List<String> lines = new ArrayList<String>();
+    List<HudComponent> components = Collections.emptyList();
     private boolean hasHead;
     private int bodyEnd;
     ItemStack icon;
@@ -75,7 +77,10 @@ final class Tooltip {
         else if (target.getEntity() != null) buildEntity(target, lite);
 
         if (changes != null) {
-            if (!lite) lines.addAll(bodyEnd, changes.lines);
+            if (!lite) {
+                lines.addAll(bodyEnd, changes.lines);
+                components = changes.components;
+            }
             if (changes.name != null) {
                 if (hasHead) lines.set(0, changes.name);
                 else lines.add(0, changes.name);
