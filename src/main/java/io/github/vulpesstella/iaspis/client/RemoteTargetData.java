@@ -54,7 +54,6 @@ final class RemoteTargetData {
                 && TargetDataChannel.supportsTanks(target.getPlayer());
         if (fresh && tank) target.setTankPreview(tanks);
         boolean machinePreview = TargetDataChannel.supportsMachines(target.getPlayer())
-                && (PreviewSample.ENERGY.enabled() || PreviewSample.PROCESSING.enabled())
                 && MachineProviders.supports(target.getTileEntity());
         if (fresh && machinePreview) target.setMachinePreview(machine);
         if (!request || now - nextRequest < 0 || (!preview && !tank && !machinePreview && bridge.syncedKeys(target.getBlockID(),

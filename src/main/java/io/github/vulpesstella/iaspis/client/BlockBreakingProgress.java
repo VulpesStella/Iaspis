@@ -36,8 +36,7 @@ final class BlockBreakingProgress {
             if (perTick > 0 && perTick < 1) {
                 damage += perTick * Math.max(0, Math.min(1, partialTicks));
             }
-            return new BlockBreakingProgress(Math.min(1, damage),
-                    block.canHarvestBlock(target.getPlayer(), target.getMetadata()));
+            return new BlockBreakingProgress(Math.min(1, damage), HarvestHint.canHarvest(target));
         } catch (IllegalAccessException e) {
             WailaBridge.INSTANCE.report("Could not read block breaking progress", e);
             return null;

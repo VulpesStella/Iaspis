@@ -33,6 +33,7 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor {
     private final int metadata;
     private final ItemStack stack;
     private NBTTagCompound nbt;
+    private boolean remoteNbt;
     private boolean readNbt;
     private InventoryPreview inventory;
     private List<TankPreview> tanks = Collections.emptyList();
@@ -83,7 +84,10 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor {
     public void setRemoteData(NBTTagCompound data) {
         nbt = data;
         readNbt = true;
+        remoteNbt = true;
     }
+
+    public NBTTagCompound getRemoteData() { return remoteNbt ? nbt : null; }
 
     public void setInventoryPreview(InventoryPreview preview) {
         inventory = preview;

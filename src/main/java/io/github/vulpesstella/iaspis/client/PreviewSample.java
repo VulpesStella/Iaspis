@@ -47,10 +47,14 @@ BREAKING("breaking.enabled"),
     TANK("tank.preview"),
     TANK_DETAILS("tank.details", false),
     TANK_BAR("tank.bar"),
-    ENERGY("machine.energy"),
     PROCESSING("machine.progress"),
-    ENERGY_BAR("machine.energyBar"),
-    MACHINE_DETAILS("machine.details", false);
+    PROCESSING_DETAILS("machine.details", false),
+    BREWING("vanilla.brewing"),
+    SPAWNER("vanilla.spawner"),
+    HOPPER("vanilla.hopper"),
+    NOTE_BLOCK("vanilla.note"),
+    JUKEBOX("vanilla.jukebox"),
+    ENCHANTING("vanilla.enchanting");
 
     final String key;
     final boolean defaultEnabled;

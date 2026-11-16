@@ -41,6 +41,9 @@ final class Tooltip {
     List<TankPreview> tanks = Collections.emptyList();
     MachinePreview energy = MachinePreview.EMPTY;
     float processing;
+    float brewProgress = -1;
+    ItemStack detailItem;
+    String detailLabel;
     HarvestHint harvest;
     List<ItemStack> inventory = Collections.emptyList();
     List<ItemStack> furnaceSlots = Collections.emptyList();
@@ -62,11 +65,10 @@ final class Tooltip {
         List<TankPreview> tankPreview = target.getTankPreview();
         if (!PreviewSample.TANK_DETAILS.enabled() || details) tanks = tankPreview;
         MachinePreview machine = target.getMachinePreview();
-        boolean showMachine = !PreviewSample.MACHINE_DETAILS.enabled() || details;
-        boolean energyAvailable = machine.unit != null && PreviewSample.ENERGY.enabled();
+        boolean showProcessing = !PreviewSample.PROCESSING_DETAILS.enabled() || details;
         boolean processingAvailable = machine.progress > 0 && PreviewSample.PROCESSING.enabled();
-        if (showMachine && energyAvailable) energy = machine;
-        if (showMachine && processingAvailable) processing = machine.progress;
+        if (machine.unit != null) energy = machine;
+        if (showProcessing && processingAvailable) processing = machine.progress;
         InventoryPreview preview = target.getInventoryPreview();
         boolean showInventory = true;
         if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
@@ -74,7 +76,7 @@ final class Tooltip {
             showInventory = !applyFurnaceProgress(preview.furnaceSlots, progress);
         }
         if (showInventory) applyInventory(preview.stacks, preview.truncated, details, detailKey);
-        if ((tanks.isEmpty() && !tankPreview.isEmpty()) || (!showMachine && (energyAvailable || processingAvailable))) {
+        if ((tanks.isEmpty() && !tankPreview.isEmpty()) || (!showProcessing && processingAvailable)) {
             String hint = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
             if (!lines.contains(hint)) lines.add(hint);
         }
@@ -183,22 +185,45 @@ final class Tooltip {
                     }
                 }
                 break;
-            case ENERGY:
-            case ENERGY_BAR:
             case PROCESSING:
-            case MACHINE_DETAILS:
+            case PROCESSING_DETAILS:
                 tooltip.icon = new ItemStack(Block.furnaceIdle);
                 entityName = StatCollector.translateToLocal("iaspis.machine.example");
-                boolean energySample = sample != PreviewSample.PROCESSING && PreviewSample.ENERGY.enabled();
-                boolean progressSample = (sample == PreviewSample.PROCESSING || sample == PreviewSample.MACHINE_DETAILS)
-                        && PreviewSample.PROCESSING.enabled();
-                if ((energySample || progressSample) && PreviewSample.MACHINE_DETAILS.enabled()
-                        && millis % 3200 < 1600) {
-                    detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", "Shift");
-                } else {
-                    if (energySample) tooltip.energy = new MachinePreview(MachinePreview.EnergyUnit.EU, 1800, 4000, 0);
-                    if (progressSample) tooltip.processing = 0.25F + (millis % 2200) / 4400.0F;
+                if (PreviewSample.PROCESSING.enabled()) {
+                    if (PreviewSample.PROCESSING_DETAILS.enabled() && millis % 3200 < 1600) {
+                        detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", "Shift");
+                    } else {
+                        tooltip.processing = 0.25F + (millis % 2200) / 4400.0F;
+                    }
                 }
+                break;
+            case BREWING:
+                tooltip.icon = new ItemStack(Item.brewingStand);
+                if (sample.enabled()) tooltip.brewProgress = 0.2F + (millis % 2200) / 3000.0F;
+                if (PreviewSample.INVENTORY.enabled()) {
+                    exampleInventory = Arrays.asList(new ItemStack(Item.potion), new ItemStack(Item.netherStalkSeeds, 3));
+                }
+                break;
+            case SPAWNER:
+                tooltip.icon = new ItemStack(Block.mobSpawner);
+                if (sample.enabled()) detail = VanillaBlockDetails.spawns("Skeleton");
+                break;
+            case HOPPER:
+                tooltip.icon = new ItemStack(Block.hopperBlock);
+                if (sample.enabled()) detail = VanillaBlockDetails.hopper(millis % 3000 < 1500);
+                if (PreviewSample.INVENTORY.enabled()) exampleInventory = Collections.singletonList(new ItemStack(Item.coal, 8));
+                break;
+            case NOTE_BLOCK:
+                tooltip.icon = new ItemStack(Block.music);
+                if (sample.enabled()) detail = VanillaBlockDetails.note((int) (millis / 700 % 25));
+                break;
+            case JUKEBOX:
+                tooltip.icon = new ItemStack(Block.jukebox);
+                if (sample.enabled()) VanillaBlockDetails.setRecord(tooltip, new ItemStack(Item.recordCat));
+                break;
+            case ENCHANTING:
+                tooltip.icon = new ItemStack(Block.enchantmentTable);
+                if (sample.enabled()) detail = VanillaBlockDetails.enchanting(millis % 2800 < 1400 ? 8 : 15);
                 break;
             case BOSS_BAR:
                 tooltip.icon = new ItemStack(Block.obsidian);
@@ -280,11 +305,11 @@ final class Tooltip {
         IWailaBlock direct = block instanceof IWailaBlock ? (IWailaBlock) block : null;
         icon = pickStack(target, direct);
         if (icon == null) fluid = FluidTarget.fluid(block);
-        List<String> head = section(fluid != null ? fluidName(fluid)
-                : icon == null ? block.getLocalizedName() : icon.getDisplayName());
+        List<String> head = section(fluid != null ? fluidName(fluid) : VanillaBlockDetails.blockName(block, icon));
         List<String> body = new ArrayList<String>();
         if (!lite) {
             addBlockDetails(target, body);
+            VanillaBlockDetails.append(target, this, body);
             if (FluidTarget.fluid(block) == null && Iaspis.config().getBoolean("harvest.enabled")) harvest = HarvestHint.create(target, body);
         }
         GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(block);

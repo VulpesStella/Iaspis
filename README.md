@@ -32,7 +32,11 @@ For blocks that expose tanks through Forge, the HUD shows the fluid name, stored
 
 ## Machine data
 
-Add-ons can register machine data with `MachineProviders.register` during common mod initialization. A provider supplies stored energy and capacity in its native unit, processing progress, or both. Content settings control the fill bar, progress arrow, and whether machine data appears only while holding Sneak. Multiplayer machine previews require the provider and Iaspis on the server and client.
+Add-ons can register machine data with `MachineProviders.register` during common mod initialization. A provider supplies stored energy and capacity in its native unit, processing progress, or both. Content settings control the processing arrow and whether it appears only while holding Sneak. Multiplayer machine previews require the provider and Iaspis on the server and client.
+
+## Vanilla block details
+
+Content settings control brewing progress, spawner mobs, hopper locks, note block pitch, jukebox records, and enchanting power. The brewing stand shows its current progress while brewing. Enchanting power counts the usable bookshelf bonus, up to the vanilla cap of 15. Install Iaspis on the multiplayer server to share brewing time, note pitch, the inserted record, and the hopper's lock state.
 
 ## WAILA integrations
 

@@ -9,6 +9,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.StatCollector;
+import net.minecraftforge.common.IShearable;
 import net.minecraftforge.common.MinecraftForge;
 
 final class HarvestHint {
@@ -30,7 +31,7 @@ final class HarvestHint {
     }
 
     static HarvestHint preview(Block block, boolean harvestable) {
-        boolean requiresTool = !block.blockMaterial.isToolNotRequired();
+        boolean requiresTool = !block.blockMaterial.isToolNotRequired() || requiresShears(block);
         return new HarvestHint(findTools(block, 0, 3, requiresTool), harvestable, requiresTool || !harvestable);
     }
 
@@ -47,11 +48,18 @@ final class HarvestHint {
             return null;
         }
 
-        boolean requiresTool = !block.blockMaterial.isToolNotRequired();
+        boolean requiresTool = !block.blockMaterial.isToolNotRequired() || requiresShears(block);
         if (!requiresTool && !PreviewSample.HARVEST_EFFECTIVE.enabled()) return null;
         List<ToolIcon> icons = findTools(block, target.getMetadata(), hardness, requiresTool);
+        if (block instanceof IShearable && !requiresShears(block)
+                && !isEffective(Item.shears, block, target.getMetadata(), requiresTool)) {
+            ItemStack shears = new ItemStack(Item.shears);
+            if (((IShearable) block).isShearable(shears, target.getWorld(), hit.blockX, hit.blockY, hit.blockZ)) {
+                icons.add(new ToolIcon(shears, ""));
+            }
+        }
         if (icons.isEmpty()) return null;
-        boolean harvestable = block.canHarvestBlock(target.getPlayer(), target.getMetadata());
+        boolean harvestable = canHarvest(target);
         return new HarvestHint(icons, harvestable, requiresTool || !harvestable);
     }
 
@@ -78,10 +86,21 @@ final class HarvestHint {
                 icons.add(new ToolIcon(new ItemStack(Item.swordWood), ""));
             }
         }
-        if (isEffective(Item.shears, block, metadata, requiresTool)) {
+        if (requiresShears(block) || (block != Block.redstoneWire && isEffective(Item.shears, block, metadata, requiresTool))) {
             icons.add(new ToolIcon(new ItemStack(Item.shears), ""));
         }
         return icons;
+    }
+
+    static boolean canHarvest(Target target) {
+        if (!target.getBlock().canHarvestBlock(target.getPlayer(), target.getMetadata())) return false;
+        if (!requiresShears(target.getBlock())) return true;
+        ItemStack held = target.getPlayer().getCurrentEquippedItem();
+        return held != null && held.getItem() == Item.shears;
+    }
+
+    private static boolean requiresShears(Block block) {
+        return block == Block.deadBush || block == Block.vine;
     }
 
     private static boolean isEffective(Item tool, Block block, int metadata, boolean requiresTool) {

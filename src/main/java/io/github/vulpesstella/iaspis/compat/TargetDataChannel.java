@@ -16,6 +16,7 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 import io.github.vulpesstella.iaspis.Iaspis;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockHopper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -35,6 +36,7 @@ public final class TargetDataChannel implements IPacketHandler {
     public static final String NAME = "IaspisData";
     public static final String TANK_CAPABILITY = "IaspisTanks";
     public static final String MACHINE_CAPABILITY = "IaspisMachines";
+    public static final String HOPPER_LOCKED = "IaspisHopperLocked";
     private static final int MAX_PACKET = 30000;
     private static final int REQUEST_SIZE = 21;
     private static final long MIN_INTERVAL = 150000000L;
@@ -144,13 +146,15 @@ public final class TargetDataChannel implements IPacketHandler {
         TileEntity tile = world.getBlockTileEntity(x, y, z);
         if (tile == null) return;
 
-        Vec3 eyes = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
-        Vec3 center = Vec3.createVectorHelper(x + 0.5, y + 0.5, z + 0.5);
-        MovingObjectPosition hit = world.rayTraceBlocks_do_do(eyes, center, false, true);
-        if (hit == null || hit.blockX != x || hit.blockY != y || hit.blockZ != z) return;
-
         int id = world.getBlockId(x, y, z);
         Block block = Block.blocksList[id];
+        Vec3 eyes = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+        // The brewing stand's selectable base sits near the bottom of the block.
+        double hitHeight = block == Block.brewingStand ? 0.0625 : 0.5;
+        Vec3 point = Vec3.createVectorHelper(x + 0.5, y + hitHeight, z + 0.5);
+        MovingObjectPosition hit = world.rayTraceBlocks_do_do(eyes, point, false, true);
+        if (hit == null || hit.blockX != x || hit.blockY != y || hit.blockZ != z) return;
+
         WailaBridge bridge = WailaBridge.INSTANCE;
         List<String> keys = bridge.syncedKeys(id, block, tile);
         NBTTagCompound data = null;
@@ -158,6 +162,11 @@ public final class TargetDataChannel implements IPacketHandler {
             NBTTagCompound full = new NBTTagCompound();
             tile.writeToNBT(full);
             data = select(full, keys);
+        }
+        if (block == Block.hopperBlock) {
+            if (data == null) data = new NBTTagCompound();
+            data.setBoolean(HOPPER_LOCKED,
+                    !BlockHopper.getIsBlockNotPoweredFromMetadata(world.getBlockMetadata(x, y, z)));
         }
         InventoryPreview inventory = InventoryPreview.EMPTY;
         if (tile instanceof IInventory && Iaspis.config().getBoolean("inventory.preview")) {
@@ -181,8 +190,7 @@ public final class TargetDataChannel implements IPacketHandler {
             }
         }
         MachinePreview machine = supportsMachines(player)
-                ? MachineProviders.collect(tile, Iaspis.config().getBoolean("machine.energy"),
-                        Iaspis.config().getBoolean("machine.progress"))
+                ? MachineProviders.collect(tile, Iaspis.config().getBoolean("machine.progress"))
                 : MachinePreview.EMPTY;
         sendResponse(player, sequence, data, inventory, tanks, machine);
     }

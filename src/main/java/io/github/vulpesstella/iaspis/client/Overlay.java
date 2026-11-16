@@ -222,20 +222,23 @@ public final class Overlay extends Gui {
             tankWidth = Math.max(tankWidth, game.fontRenderer.getStringWidth(label) + (tankBar ? 6 : 0));
         }
         int tankHeight = meterRowHeight(tankBar);
-        boolean energyBar = PreviewSample.ENERGY_BAR.enabled();
         String energyLabel = tooltip.energy.unit == null ? null : Tooltip.energyLabel(tooltip.energy);
-        int energyWidth = energyLabel == null ? 0 : game.fontRenderer.getStringWidth(energyLabel) + (energyBar ? 6 : 0);
-        String progressLabel = tooltip.processing == 0 ? null
-                : StatCollector.translateToLocalFormatted("iaspis.machine.progressAmount", (int) (tooltip.processing * 100));
+        int energyWidth = energyLabel == null ? 0 : game.fontRenderer.getStringWidth(energyLabel) + 6;
+        float progress = tooltip.brewProgress >= 0 ? tooltip.brewProgress : tooltip.processing;
+        boolean showProgress = tooltip.brewProgress >= 0 || progress > 0;
+        String progressLabel = showProgress ? StatCollector.translateToLocalFormatted(
+                "iaspis.machine.progressAmount", (int) (progress * 100)) : null;
         int progressWidth = progressLabel == null ? 0 : PROGRESS_ARROW_WIDTH + 5 + game.fontRenderer.getStringWidth(progressLabel);
-        int machineWidth = Math.max(energyWidth, progressWidth);
+        int itemDetailWidth = tooltip.detailItem == null ? 0 : SLOT_SIZE + 2 + game.fontRenderer.getStringWidth(tooltip.detailLabel);
+        int machineWidth = Math.max(Math.max(energyWidth, progressWidth), itemDetailWidth);
         int width = Math.max(Math.max(headerWidth, columns * SLOT_SIZE),
                 Math.max(Math.max(harvestWidth, furnaceWidth),
                         Math.max(Math.max(healthWidth, armorWidth), Math.max(tankWidth, machineWidth)))) + 12;
         int height = headerHeight + harvestHeight + rows * SLOT_SIZE + 10
                 + (healthRows + extraHealthRows + armorRows) * VITAL_ROW_HEIGHT
                 + (furnaceWidth > 0 ? SLOT_SIZE : 0) + tankLabels.size() * tankHeight
-                + (energyLabel == null ? 0 : meterRowHeight(energyBar)) + (progressLabel == null ? 0 : SLOT_SIZE);
+                + (energyLabel == null ? 0 : meterRowHeight(true)) + (progressLabel == null ? 0 : SLOT_SIZE)
+                + (itemDetailWidth == 0 ? 0 : SLOT_SIZE);
         if (sample == PreviewSample.ANCHOR_Y) {
             scale = Math.min(scale, areaHeight / (2.0F * (height + 8)));
             layoutWidth = (int) (areaWidth / scale);
@@ -341,21 +344,25 @@ public final class Overlay extends Gui {
                 }
                 if (energyLabel != null) {
                     int meterLeft = left + 6;
-                    if (energyBar) {
-                        int fill = drawMeter(meterLeft, detailTop, bounds.width - 12,
-                                tooltip.energy.stored / tooltip.energy.capacity);
-                        if (fill > 0) {
-                            drawRect(meterLeft + 1, detailTop + 1, meterLeft + fill + 1,
-                                    detailTop + METER_HEIGHT - 1, 0xffaa5924);
-                        }
+                    int fill = drawMeter(meterLeft, detailTop, bounds.width - 12,
+                            tooltip.energy.stored / tooltip.energy.capacity);
+                    if (fill > 0) {
+                        drawRect(meterLeft + 1, detailTop + 1, meterLeft + fill + 1,
+                                detailTop + METER_HEIGHT - 1, 0xffaa5924);
                     }
-                    drawMeterLabel(energyLabel, meterLeft, detailTop, energyBar);
-                    detailTop += meterRowHeight(energyBar);
+                    drawMeterLabel(energyLabel, meterLeft, detailTop, true);
+                    detailTop += meterRowHeight(true);
                 }
                 if (progressLabel != null) {
-                    drawProgressArrow(left + 6, detailTop + 1, tooltip.processing);
+                    drawProgressArrow(left + 6, detailTop + 1, progress);
                     game.fontRenderer.drawStringWithShadow(progressLabel,
                             left + 11 + PROGRESS_ARROW_WIDTH, detailTop + 5, 0xffffff);
+                    detailTop += SLOT_SIZE;
+                }
+                if (itemDetailWidth > 0) {
+                    drawItem(tooltip.detailItem, left + 6, detailTop + 1);
+                    game.fontRenderer.drawStringWithShadow(tooltip.detailLabel,
+                            left + 8 + SLOT_SIZE, detailTop + 5, 0xffffff);
                     detailTop += SLOT_SIZE;
                 }
                 if (columns > 0) drawInventory(tooltip.inventory, columns, left + 6, detailTop, scale != 1);

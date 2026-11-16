@@ -14,6 +14,11 @@ public final class IaspisConfig {
     IaspisConfig(File path) {
         file = new Configuration(path);
         file.load();
+        if (file.hasCategory(DISPLAY)) {
+            file.getCategory(DISPLAY).remove("machine.energy");
+            file.getCategory(DISPLAY).remove("machine.energyBar");
+            save();
+        }
     }
 
     public boolean getBoolean(String key) {

@@ -26,16 +26,14 @@ public final class MachineProviders {
         return tile != null && providerFor(tile) != null;
     }
 
-    static MachinePreview collect(TileEntity tile, boolean energy, boolean progress) {
-        if (tile == null || (!energy && !progress)) return MachinePreview.EMPTY;
+    static MachinePreview collect(TileEntity tile, boolean progress) {
+        if (tile == null) return MachinePreview.EMPTY;
         Provider provider = providerFor(tile);
         if (provider == null) return MachinePreview.EMPTY;
         try {
             MachinePreview preview = provider.read(tile);
-            if (preview != null) {
-                return new MachinePreview(energy ? preview.unit : null, preview.stored, preview.capacity,
-                        progress ? preview.progress : 0);
-            }
+            if (preview != null) return progress || preview.progress == 0 ? preview
+                    : new MachinePreview(preview.unit, preview.stored, preview.capacity, 0);
         } catch (RuntimeException e) {
             WailaBridge.INSTANCE.report("Machine preview for " + tile.getClass().getName(), e);
         } catch (LinkageError e) {
