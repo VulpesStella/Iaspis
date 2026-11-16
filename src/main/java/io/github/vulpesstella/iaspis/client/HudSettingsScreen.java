@@ -37,14 +37,15 @@ final class HudSettingsScreen extends GuiScreen {
                 PreviewSample.ANCHOR_X, PreviewSample.ANCHOR_Y, PreviewSample.AUTO_SCALE),
         BEHAVIOR("behavior", PreviewSample.MODE, PreviewSample.VISIBILITY, PreviewSample.ANIMATION,
                 PreviewSample.BOSS_BAR, PreviewSample.LINGER, PreviewSample.BLOCKS, PreviewSample.ENTITIES,
-                PreviewSample.BOSSES, PreviewSample.TAB_LIST),
+                PreviewSample.BOSSES, PreviewSample.TAB_LIST, PreviewSample.FLUID_TARGET),
         CONTENT("content", PreviewSample.INVENTORY, PreviewSample.INVENTORY_LIMIT, PreviewSample.INVENTORY_DETAILS,
                 PreviewSample.INVENTORY_COLUMNS, PreviewSample.INVENTORY_NAMES, PreviewSample.INVENTORY_SORT,
                 PreviewSample.HARVEST, PreviewSample.HARVEST_EFFECTIVE, PreviewSample.HARVEST_CREATIVE,
                 PreviewSample.HARVEST_UNBREAKABLE, PreviewSample.HARVEST_NEW_LINE, PreviewSample.HEALTH,
                 PreviewSample.BREAKING,
                 PreviewSample.HEALTH_LIMIT, PreviewSample.HEALTH_COLUMNS, PreviewSample.HEALTH_FRACTION,
-                PreviewSample.ARMOR, PreviewSample.ARMOR_LIMIT, PreviewSample.GROWTH, PreviewSample.FURNACE);
+                PreviewSample.ARMOR, PreviewSample.ARMOR_LIMIT, PreviewSample.GROWTH, PreviewSample.FURNACE,
+                PreviewSample.TANK, PreviewSample.TANK_DETAILS, PreviewSample.TANK_BAR);
 
         final String key;
         final PreviewSample[] options;

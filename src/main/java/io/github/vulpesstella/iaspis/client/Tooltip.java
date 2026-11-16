@@ -12,6 +12,7 @@ import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.Target;
+import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import io.github.vulpesstella.iaspis.compat.WailaBridge.Section;
@@ -26,12 +27,16 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.StatCollector;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidRegistry;
 
 final class Tooltip {
     private static final WailaBridge BRIDGE = WailaBridge.INSTANCE;
 
     final List<String> lines = new ArrayList<String>();
     ItemStack icon;
+    Fluid fluid;
+    List<TankPreview> tanks = Collections.emptyList();
     HarvestHint harvest;
     List<ItemStack> inventory = Collections.emptyList();
     List<ItemStack> furnaceSlots = Collections.emptyList();
@@ -50,12 +55,19 @@ final class Tooltip {
         else if (target.getEntity() != null) buildEntity(target, lite);
 
         if (lite) return;
+        List<TankPreview> tankPreview = target.getTankPreview();
+        if (!PreviewSample.TANK_DETAILS.enabled() || details) tanks = tankPreview;
         InventoryPreview preview = target.getInventoryPreview();
+        boolean showInventory = true;
         if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
             int progress = target.getNBTInteger(target.getNBTData(), "CookTime");
-            if (applyFurnaceProgress(preview.furnaceSlots, progress)) return;
+            showInventory = !applyFurnaceProgress(preview.furnaceSlots, progress);
         }
-        applyInventory(preview.stacks, preview.truncated, details, detailKey);
+        if (showInventory) applyInventory(preview.stacks, preview.truncated, details, detailKey);
+        if (tanks.isEmpty() && !tankPreview.isEmpty()) {
+            String hint = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
+            if (!lines.contains(hint)) lines.add(hint);
+        }
     }
 
     private void applyInventory(List<ItemStack> stacks, boolean truncated, boolean details, String detailKey) {
@@ -142,6 +154,25 @@ final class Tooltip {
                     exampleInventory = items;
                 }
                 break;
+            case FLUID_TARGET:
+                tooltip.fluid = FluidRegistry.WATER;
+                entityName = StatCollector.translateToLocal(millis % 3200 < 1600
+                        ? "iaspis.fluid.source" : "iaspis.fluid.flowing");
+                break;
+            case TANK:
+            case TANK_DETAILS:
+            case TANK_BAR:
+                tooltip.icon = new ItemStack(Item.cauldron);
+                entityName = StatCollector.translateToLocal("iaspis.tank.example");
+                if (PreviewSample.TANK.enabled()) {
+                    if (PreviewSample.TANK_DETAILS.enabled() && millis % 3200 < 1600) {
+                        detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", "Shift");
+                    } else {
+                        tooltip.tanks = Arrays.asList(new TankPreview(FluidRegistry.WATER, 6000, 8000),
+                                new TankPreview(null, 0, 4000));
+                    }
+                }
+                break;
             case BOSS_BAR:
                 tooltip.icon = new ItemStack(Block.obsidian);
                 break;
@@ -198,15 +229,29 @@ final class Tooltip {
         return !slots.isEmpty();
     }
 
+    static String tankLabel(TankPreview tank) {
+        String name = tank.fluid == null ? StatCollector.translateToLocal(
+                tank.amount == 0 ? "iaspis.tank.empty" : "iaspis.tank.unknown") : fluidName(tank.fluid);
+        return StatCollector.translateToLocalFormatted("iaspis.tank.amount", name, tank.amount, tank.capacity);
+    }
+
+    private static String fluidName(Fluid fluid) {
+        if (fluid == FluidRegistry.WATER) return StatCollector.translateToLocal("tile.water.name");
+        if (fluid == FluidRegistry.LAVA) return StatCollector.translateToLocal("tile.lava.name");
+        return fluid.getLocalizedName();
+    }
+
     private void buildBlock(Target target, boolean lite) {
         Block block = target.getBlock();
         IWailaBlock direct = block instanceof IWailaBlock ? (IWailaBlock) block : null;
         icon = pickStack(target, direct);
-        List<String> head = section(icon == null ? block.getLocalizedName() : icon.getDisplayName());
+        if (icon == null) fluid = FluidTarget.fluid(block);
+        List<String> head = section(fluid != null ? fluidName(fluid)
+                : icon == null ? block.getLocalizedName() : icon.getDisplayName());
         List<String> body = new ArrayList<String>();
         if (!lite) {
             addBlockDetails(target, body);
-            if (Iaspis.config().getBoolean("harvest.enabled")) harvest = HarvestHint.create(target, body);
+            if (FluidTarget.fluid(block) == null && Iaspis.config().getBoolean("harvest.enabled")) harvest = HarvestHint.create(target, body);
         }
         GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(block);
         List<String> tail = source(id == null ? null : Loader.instance().getIndexedModList().get(id.modId),

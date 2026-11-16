@@ -28,6 +28,11 @@ after a clean checkout, build once before inspecting those generated JARs in an 
 Publishing is explicitly enabled in the template; `mod` uses `components.java`.
 Minecraft and Forge development libraries are excluded from published variants.
 
+Run `./build.ps1 runClient -PwithIc2=true` (or `./build.sh runClient -PwithIc2=true`)
+to launch with [IC² Experimental 2.0.397](https://www.curseforge.com/minecraft/mc-mods/industrial-craft/files/6657899)
+for fluid tank testing. Use the same flag with `runServer` for multiplayer testing.
+The remapped development copy can produce an IC² signature warning at startup.
+
 For source development set `retrospectumLoomCheckout` to a Loom checkout.
 Set `mixin_bootstrap` to a built shared runtime JAR, or
 `retrospectumMixinCheckout` to a checkout whose built runtime matches `mixin_version`.

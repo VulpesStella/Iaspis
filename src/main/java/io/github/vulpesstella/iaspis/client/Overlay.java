@@ -6,6 +6,7 @@ import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.Target;
+import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import mcp.mobius.waila.api.IWailaBlockDecorator;
 import net.minecraft.block.Block;
@@ -13,6 +14,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
@@ -20,6 +23,8 @@ import net.minecraft.entity.boss.BossStatus;
 import net.minecraft.entity.boss.IBossDisplayData;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumMovingObjectType;
+import net.minecraft.util.Icon;
+import net.minecraft.util.Vec3;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
@@ -27,6 +32,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.ForgeSubscribe;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -36,6 +44,7 @@ public final class Overlay extends Gui {
     private static final int SLOT_SIZE = 18;
     private static final int ICON_STEP = 9;
     private static final int VITAL_ROW_HEIGHT = 11;
+    private static final int TANK_BAR_HEIGHT = 13;
     private static final ResourceLocation ASCII_FONT = new ResourceLocation("textures/font/ascii.png");
     private static final ResourceLocation UNICODE_DIGITS = new ResourceLocation("textures/font/unicode_page_00.png");
     private final Minecraft game = Minecraft.getMinecraft();
@@ -69,7 +78,7 @@ public final class Overlay extends Gui {
         Target target;
         BlockBreakingProgress breaking = null;
         boolean animate = Iaspis.config().getBoolean("overlay.animation");
-        if (game.objectMouseOver == null) {
+        if (game.objectMouseOver == null && NumberOption.FLUID_TARGET.get() == FluidTarget.OFF) {
             target = null;
         } else {
             // Legacy providers and modded pick-block hooks run before the HUD draws.
@@ -161,7 +170,7 @@ public final class Overlay extends Gui {
             return;
         }
         boolean showIcon = NumberOption.ICON.get() != HudSettings.ICON_HIDDEN
-                && tooltip.icon != null && tooltip.icon.getItem() != null;
+                && (tooltip.fluid != null || (tooltip.icon != null && tooltip.icon.getItem() != null));
         boolean inlineIcon = showIcon && NumberOption.ICON.get() == HudSettings.ICON_INLINE;
         int iconWidth = showIcon ? 21 : 0;
         int columns = Math.min(Math.min(NumberOption.INVENTORY_COLUMNS.get(), tooltip.inventory.size()),
@@ -203,11 +212,20 @@ public final class Overlay extends Gui {
                 : Math.min(armorColumns, shields) * ICON_STEP;
         int extraHealthRows = healthFraction && !compactHealth ? 1 : 0;
         int furnaceWidth = tooltip.cookTime < 0 ? 0 : tooltip.furnaceSlots.isEmpty() ? 24 : 3 * SLOT_SIZE + 28;
+        boolean tankBar = PreviewSample.TANK_BAR.enabled();
+        int tankWidth = 0;
+        List<String> tankLabels = new ArrayList<String>(tooltip.tanks.size());
+        for (TankPreview tank : tooltip.tanks) {
+            String label = Tooltip.tankLabel(tank);
+            tankLabels.add(label);
+            tankWidth = Math.max(tankWidth, game.fontRenderer.getStringWidth(label) + (tankBar ? 6 : 0));
+        }
+        int tankHeight = tankBar ? TANK_BAR_HEIGHT + 2 : 10;
         int width = Math.max(Math.max(headerWidth, columns * SLOT_SIZE),
-                Math.max(Math.max(harvestWidth, furnaceWidth), Math.max(healthWidth, armorWidth))) + 12;
+                Math.max(Math.max(harvestWidth, furnaceWidth), Math.max(Math.max(healthWidth, armorWidth), tankWidth))) + 12;
         int height = headerHeight + harvestHeight + rows * SLOT_SIZE + 10
                 + (healthRows + extraHealthRows + armorRows) * VITAL_ROW_HEIGHT
-                + (furnaceWidth > 0 ? SLOT_SIZE : 0);
+                + (furnaceWidth > 0 ? SLOT_SIZE : 0) + tankLabels.size() * tankHeight;
         if (sample == PreviewSample.ANCHOR_Y) {
             scale = Math.min(scale, areaHeight / (2.0F * (height + 8)));
             layoutWidth = (int) (areaWidth / scale);
@@ -274,7 +292,9 @@ public final class Overlay extends Gui {
                 drawRect(left, top, left + bounds.width, top + bounds.height, HudSettings.background());
                 drawRect(left, top, left + bounds.width, top + 1, HudSettings.accent());
                 if (showIcon) {
-                    drawItem(tooltip.icon, left + 4, top + 5 + (inlineIcon ? 0 : (headerHeight - 16) / 2));
+                    int iconTop = top + 5 + (inlineIcon ? 0 : (headerHeight - 16) / 2);
+                    if (tooltip.fluid == null) drawItem(tooltip.icon, left + 4, iconTop);
+                    else drawFluid(tooltip.fluid, 0, left + 4, iconTop, 16, 16);
                 }
                 for (int i = 0; i < lines.size(); i++) {
                     int x = left + 6 + (inlineIcon && i > 0 ? 0 : iconWidth);
@@ -305,6 +325,10 @@ public final class Overlay extends Gui {
                     drawFurnace(tooltip, left + 6, detailTop, scale != 1);
                     detailTop += SLOT_SIZE;
                 }
+                for (int i = 0; i < tankLabels.size(); i++) {
+                    drawTank(tooltip.tanks.get(i), tankLabels.get(i), left + 6, detailTop, bounds.width - 12, tankBar);
+                    detailTop += tankHeight;
+                }
                 if (columns > 0) drawInventory(tooltip.inventory, columns, left + 6, detailTop, scale != 1);
                 if (breaking != null) drawBreakingProgress(breaking, bounds);
             } finally {
@@ -313,6 +337,52 @@ public final class Overlay extends Gui {
             if (captured) fade.composite(opacity, pixelScale, game.displayHeight);
         } finally {
             hud.close();
+        }
+    }
+
+    private void drawTank(TankPreview tank, String label, int left, int top, int width, boolean bar) {
+        if (bar && width > 2) {
+            drawRect(left, top, left + width, top + TANK_BAR_HEIGHT, 0xff424454);
+            drawRect(left + 1, top + 1, left + width - 1, top + TANK_BAR_HEIGHT - 1, 0xff191a22);
+            int fill = (int) Math.min(width - 2L, (width - 2L) * tank.amount / tank.capacity);
+            if (tank.fluid != null && fill > 0) {
+                drawFluid(tank.fluid, tank.amount, left + 1, top + 1, fill, TANK_BAR_HEIGHT - 2);
+            }
+        }
+        game.fontRenderer.drawStringWithShadow(label, left + (bar ? 3 : 0), top + (bar ? 2 : 0), 0xffffff);
+    }
+
+    private void drawFluid(Fluid fluid, int amount, int left, int top, int width, int height) {
+        FluidStack stack = amount == 0 ? null : new FluidStack(fluid, amount);
+        Icon texture = stack == null ? fluid.getIcon() : fluid.getIcon(stack);
+        if (texture == null && fluid == FluidRegistry.WATER) texture = Block.waterStill.getIcon(1, 0);
+        if (texture == null && fluid == FluidRegistry.LAVA) texture = Block.lavaStill.getIcon(1, 0);
+        int color = (stack == null ? fluid.getColor() : fluid.getColor(stack)) & 0xffffff;
+        if (texture == null) {
+            drawRect(left, top, left + width, top + height, 0xff000000 | color);
+            return;
+        }
+        RenderScope scope = new RenderScope();
+        try {
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glColor4f(1, 1, 1, 1);
+            game.getTextureManager().bindTexture(TextureMap.locationBlocksTexture);
+            Tessellator tess = Tessellator.instance;
+            tess.startDrawingQuads();
+            tess.setColorOpaque_I(color);
+            for (int offset = 0; offset < width; offset += 16) {
+                int tileWidth = Math.min(16, width - offset);
+                int x = left + offset;
+                float u = texture.getInterpolatedU(tileWidth);
+                float v = texture.getInterpolatedV(height);
+                tess.addVertexWithUV(x, top + height, zLevel, texture.getMinU(), v);
+                tess.addVertexWithUV(x + tileWidth, top + height, zLevel, u, v);
+                tess.addVertexWithUV(x + tileWidth, top, zLevel, u, texture.getMinV());
+                tess.addVertexWithUV(x, top, zLevel, texture.getMinU(), texture.getMinV());
+            }
+            tess.draw();
+        } finally {
+            scope.close();
         }
     }
 
@@ -511,7 +581,18 @@ public final class Overlay extends Gui {
 
     private Target target(float partialTicks, boolean request) {
         MovingObjectPosition hit = game.objectMouseOver;
-        if (hit == null || !available()) return null;
+        if (!available()) return null;
+        int fluidMode = NumberOption.FLUID_TARGET.get();
+        if (request && fluidMode != FluidTarget.OFF && (hit == null || hit.entityHit == null)
+                && PreviewSample.BLOCKS.enabled()) {
+            Vec3 eyes = game.renderViewEntity.getPosition(partialTicks);
+            Vec3 look = game.renderViewEntity.getLook(partialTicks);
+            double reach = game.playerController.getBlockReachDistance();
+            if (hit != null && hit.hitVec != null) reach = Math.min(reach, eyes.distanceTo(hit.hitVec));
+            MovingObjectPosition fluidHit = FluidTarget.trace(game.theWorld, eyes, look, reach, fluidMode);
+            if (fluidHit != null) hit = fluidHit;
+        }
+        if (hit == null) return null;
         if (hit.entityHit != null) {
             if (!(hit.entityHit instanceof IBossDisplayData ? PreviewSample.BOSSES : PreviewSample.ENTITIES).enabled()) return null;
         } else if (!PreviewSample.BLOCKS.enabled()) {

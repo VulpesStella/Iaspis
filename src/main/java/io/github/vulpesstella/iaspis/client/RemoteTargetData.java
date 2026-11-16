@@ -1,8 +1,12 @@
 package io.github.vulpesstella.iaspis.client;
 
+import java.util.Collections;
+import java.util.List;
+
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.Target;
+import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import net.minecraft.entity.Entity;
@@ -10,6 +14,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.MovingObjectPosition;
+import net.minecraftforge.fluids.IFluidHandler;
 
 final class RemoteTargetData {
     private static final long REFRESH = 250000000L;
@@ -21,6 +26,7 @@ final class RemoteTargetData {
     private long dataTime;
     private NBTTagCompound data;
     private InventoryPreview inventory = InventoryPreview.EMPTY;
+    private List<TankPreview> tanks = Collections.emptyList();
 
     void apply(Target target, boolean request) {
         boolean sameTarget = matches(target, requested);
@@ -28,6 +34,7 @@ final class RemoteTargetData {
             requested = null;
             data = null;
             inventory = InventoryPreview.EMPTY;
+            tanks = Collections.emptyList();
         }
         Entity entity = target.getEntity();
         if ((entity == null && target.getTileEntity() == null) || entity instanceof EntityPlayer
@@ -39,7 +46,10 @@ final class RemoteTargetData {
         WailaBridge bridge = WailaBridge.INSTANCE;
         boolean preview = target.getTileEntity() instanceof IInventory && Iaspis.config().getBoolean("inventory.preview");
         target.setInventoryPreview(fresh && preview ? inventory : InventoryPreview.EMPTY);
-        if (!request || now - nextRequest < 0 || (!preview && bridge.syncedKeys(target.getBlockID(),
+        boolean tank = target.getTileEntity() instanceof IFluidHandler && PreviewSample.TANK.enabled()
+                && TargetDataChannel.supportsTanks(target.getPlayer());
+        if (fresh && tank) target.setTankPreview(tanks);
+        if (!request || now - nextRequest < 0 || (!preview && !tank && bridge.syncedKeys(target.getBlockID(),
                 entity == null ? target.getBlock() : entity, target.getTileEntity()).isEmpty())) return;
 
         requested = target;
@@ -47,10 +57,11 @@ final class RemoteTargetData {
         TargetDataChannel.request(target, ++sequence);
     }
 
-    void receive(int response, NBTTagCompound tag, InventoryPreview preview) {
+    void receive(int response, NBTTagCompound tag, InventoryPreview preview, List<TankPreview> tanks) {
         if (response == sequence && requested != null) {
             data = tag;
             inventory = preview;
+            this.tanks = tanks;
             dataTime = System.nanoTime();
         }
     }

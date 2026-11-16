@@ -11,7 +11,7 @@ import net.minecraft.tileentity.TileEntityFurnace;
 
 @Mod(modid = BuildConstants.MOD_ID, name = BuildConstants.MOD_NAME,
         version = BuildConstants.MOD_VERSION, acceptedMinecraftVersions = "[1.6.4]")
-@NetworkMod(channels = TargetDataChannel.NAME, packetHandler = TargetDataChannel.class,
+@NetworkMod(channels = { TargetDataChannel.NAME, TargetDataChannel.TANK_CAPABILITY }, packetHandler = TargetDataChannel.class,
         clientSideRequired = false, serverSideRequired = false)
 public final class Iaspis {
     private static IaspisConfig config;
@@ -26,6 +26,7 @@ public final class Iaspis {
         config.getBoolean("overlay.enabled");
         config.getBoolean("overlay.animation");
         config.getBoolean("inventory.preview");
+        config.getBoolean("tank.preview");
         config.getBoolean("harvest.enabled");
         WailaBridge.INSTANCE.initialize(event.getModLog());
         WailaBridge.INSTANCE.registerSyncedNBTKey("CookTime", TileEntityFurnace.class);

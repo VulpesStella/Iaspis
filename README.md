@@ -8,7 +8,7 @@ Entity health uses full, half, and empty hearts. Armor uses armor icons. Large v
 
 1. Install Minecraft Forge 9.11.1.1345 for Minecraft 1.6.4.
 2. Remove WAILA from the instance and place the Iaspis release JAR in `mods/`.
-3. Press **Numpad 0** in game to open Iaspis settings and **Numpad 1** to control the overlay. Change either binding in Controls.
+3. Press **Numpad 0** in game to open Iaspis settings and **Numpad 1** to control the overlay. Change these bindings in Controls.
 
 Forge lists **Iaspis** (`iaspis`) and **Iaspis WAILA Compatibility** (`Waila`). Both entries come from the same JAR. Install Iaspis on the server as well to enable server-side target data.
 
@@ -23,6 +23,12 @@ The HUD shows tools that can harvest the target or speed up breaking it. When dr
 While you break a block, a thin bar at the bottom of the HUD shows your progress. It turns red if your tool cannot harvest the block. You can disable it under Content.
 
 Container previews show item icons and stack counts. In multiplayer, install Iaspis on the server for containers whose contents are unavailable to the client. The `inventory.preview` setting in `config/iaspis.cfg` controls previews on the client and whether the server shares inventory data. Use `harvest.enabled` to toggle harvest hints.
+
+## Fluids
+
+Press **Numpad 2** to cycle fluid targeting through Off, Sources only, and All fluids. You can change the mode under Behavior and rebind the key in Controls.
+
+For blocks that expose tanks through Forge, the HUD shows the fluid name, stored amount and capacity in mB, and a fill bar. Use Content settings to turn off the bar or show tanks only while holding Sneak. Multiplayer tank previews require Iaspis on the server. Server owners can turn off tank data sharing with `tank.preview` in `config/iaspis.cfg`.
 
 ## WAILA integrations
 

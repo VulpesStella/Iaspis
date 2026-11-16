@@ -1,5 +1,8 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import java.util.Collections;
+import java.util.List;
+
 import io.github.vulpesstella.iaspis.Iaspis;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaEntityAccessor;
@@ -32,6 +35,11 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor {
     private NBTTagCompound nbt;
     private boolean readNbt;
     private InventoryPreview inventory;
+    private List<TankPreview> tanks = Collections.emptyList();
+
+    public List<TankPreview> getTankPreview() { return tanks; }
+
+    public void setTankPreview(List<TankPreview> tanks) { this.tanks = tanks; }
 
     public Target(World world, EntityPlayer player, Entity camera, MovingObjectPosition hit,
                   double partialTicks, ItemStack stack) {

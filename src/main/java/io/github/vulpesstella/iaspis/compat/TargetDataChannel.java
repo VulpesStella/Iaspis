@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -28,9 +29,11 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
+import net.minecraftforge.fluids.IFluidHandler;
 
 public final class TargetDataChannel implements IPacketHandler {
     public static final String NAME = "IaspisData";
+    public static final String TANK_CAPABILITY = "IaspisTanks";
     private static final int MAX_PACKET = 30000;
     private static final int REQUEST_SIZE = 21;
     private static final long MIN_INTERVAL = 150000000L;
@@ -38,6 +41,10 @@ public final class TargetDataChannel implements IPacketHandler {
 
     public static boolean canRequest(EntityPlayer player) {
         return NetworkRegistry.instance().isChannelActive(NAME, (Player) player);
+    }
+
+    public static boolean supportsTanks(EntityPlayer player) {
+        return NetworkRegistry.instance().isChannelActive(TANK_CAPABILITY, (Player) player);
     }
 
     public static void request(Target target, int sequence) {
@@ -60,19 +67,21 @@ public final class TargetDataChannel implements IPacketHandler {
 
     @Override
     public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
-        if (packet.data == null || packet.data.length > MAX_PACKET) return;
+        if (!NAME.equals(packet.channel) || packet.data == null || packet.data.length > MAX_PACKET) return;
         DataInputStream input = new DataInputStream(new ByteArrayInputStream(packet.data));
         try {
             int sequence = input.readInt();
             if (!(player instanceof EntityPlayerMP)) {
                 NBTTagCompound data = CompressedStreamTools.read(input);
                 InventoryPreview inventory = InventoryPreview.EMPTY;
+                List<TankPreview> tanks = Collections.emptyList();
                 // Older Iaspis servers end the response after the legacy NBT compound.
                 if (input.available() > 0) {
                     if (!input.readBoolean()) data = null;
                     inventory = InventoryPreview.read(input);
+                    tanks = TankPreview.read(input);
                 }
-                Iaspis.proxy.receiveTargetData(sequence, data, inventory);
+                Iaspis.proxy.receiveTargetData(sequence, data, inventory, tanks);
                 return;
             }
             if (packet.data.length != REQUEST_SIZE) return;
@@ -88,7 +97,7 @@ public final class TargetDataChannel implements IPacketHandler {
                 return;
             }
             NBTTagCompound data = entityData(sender, x);
-            if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY);
+            if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY, Collections.<TankPreview>emptyList());
         } catch (IOException e) {
             WailaBridge.INSTANCE.report("Invalid Iaspis target data packet", e);
         } catch (RuntimeException e) {
@@ -97,15 +106,16 @@ public final class TargetDataChannel implements IPacketHandler {
     }
 
     private static void sendResponse(EntityPlayerMP player, int sequence, NBTTagCompound tag,
-                                     InventoryPreview inventory) throws IOException {
+                                     InventoryPreview inventory, List<TankPreview> tanks) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(bytes);
         output.writeInt(sequence);
         CompressedStreamTools.write(tag == null ? new NBTTagCompound() : tag, output);
         output.writeBoolean(tag != null);
         inventory.write(output);
+        TankPreview.write(output, tanks);
         if (bytes.size() > MAX_PACKET) {
-            if (inventory != InventoryPreview.EMPTY) sendResponse(player, sequence, null, inventory);
+            if (tag != null) sendResponse(player, sequence, null, inventory, tanks);
             return;
         }
         PacketDispatcher.sendPacketToPlayer(new Packet250CustomPayload(NAME, bytes.toByteArray()), (Player) player);
@@ -150,7 +160,18 @@ public final class TargetDataChannel implements IPacketHandler {
                 bridge.report("Inventory preview for " + tile.getClass().getName(), e);
             }
         }
-        sendResponse(player, sequence, data, inventory);
+        List<TankPreview> tanks = Collections.emptyList();
+        if (tile instanceof IFluidHandler && Iaspis.config().getBoolean("tank.preview")
+                && supportsTanks(player)) {
+            try {
+                tanks = TankPreview.collect((IFluidHandler) tile);
+            } catch (RuntimeException e) {
+                bridge.report("Tank preview for " + tile.getClass().getName(), e);
+            } catch (LinkageError e) {
+                bridge.report("Tank preview for " + tile.getClass().getName(), e);
+            }
+        }
+        sendResponse(player, sequence, data, inventory, tanks);
     }
 
     private static NBTTagCompound entityData(EntityPlayerMP player, int id) {

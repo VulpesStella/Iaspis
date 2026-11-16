@@ -38,10 +38,40 @@ tasks.named('processResources', ProcessResources) {
     filesMatching('mcmod.info') { expand(modInfo) }
 }
 
+def withIc2 = providers.gradleProperty('withIc2').map { it.toBoolean() }.getOrElse(false)
+if (withIc2) {
+    def ic2Distribution = configurations.create('ic2Distribution') {
+        canBeConsumed = false
+        transitive = false
+    }
+    // Loom changes the signed class bytes when it remaps this distribution.
+    def prepareIc2 = tasks.register('prepareIc2', Zip) {
+        archiveFileName = 'industrialcraft-2_2.0.397-experimental.jar'
+        destinationDirectory = layout.buildDirectory.dir('ic2')
+        from { zipTree(ic2Distribution.singleFile) }
+        exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.EC', 'META-INF/SIG-*'
+    }
+    dependencies {
+        add(ic2Distribution.name, 'curse.maven:industrial-craft-242638:6657899')
+        modRuntimeOnly files(prepareIc2)
+        // IC2's energy network needs the legacy Matrix64F API.
+        runtimeOnly 'com.googlecode.efficient-java-matrix-library:ejml:0.23'
+    }
+}
+
 repositories {
     maven {
         url = uri(providers.gradleProperty('retrospectumMavenUrl').getOrElse('https://maven.desiderium.dev/releases/'))
         content { includeGroup 'dev.desiderium.retro' }
+    }
+    if (withIc2) {
+        mavenCentral {
+            content { includeModule 'com.googlecode.efficient-java-matrix-library', 'ejml' }
+        }
+        maven {
+            url = uri('https://cursemaven.com')
+            content { includeModule 'curse.maven', 'industrial-craft-242638' }
+        }
     }
 }
 dependencies {

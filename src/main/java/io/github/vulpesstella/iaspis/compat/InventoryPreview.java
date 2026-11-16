@@ -92,7 +92,14 @@ public final class InventoryPreview {
             if (stack != null) icons.add(stack);
         }
         List<ItemStack> furnaceSlots = new ArrayList<ItemStack>(FURNACE_SLOT_COUNT);
-        if (input.available() == FURNACE_SLOT_COUNT * 3 * (Integer.SIZE / Byte.SIZE)) {
+        int slotBytes = FURNACE_SLOT_COUNT * 3 * (Integer.SIZE / Byte.SIZE);
+        boolean orderedSlots = input.available() == slotBytes;
+        if (input.available() > slotBytes) {
+            input.mark(4);
+            orderedSlots = input.readInt() != TankPreview.MARKER;
+            input.reset();
+        }
+        if (orderedSlots) {
             for (int i = 0; i < FURNACE_SLOT_COUNT; i++) furnaceSlots.add(readStack(input));
         }
         return new InventoryPreview(icons, truncated, furnaceSlots);
