@@ -20,6 +20,8 @@ The overlay fades in when you acquire a target, resizes when you switch targets,
 
 The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold the Iaspis details key to expand container previews. The default limits are 9 stacks normally and 27 in detail mode. You can change both limits, set the number of items per row, sort by stack size, and show item names for small inventories.
 
+Set **Harvest style** under Content to **Icons**, **Text**, or **Harvestability**. All three styles use Iaspis's harvest checks. The Harvestability style uses the original symbols and layout for harvest status, Silk Touch and shearing, with separate lines for the effective tool and its tier. Iaspis suppresses the Waila Harvestability 1.1.0 tooltip provider to avoid duplicate hints when that add-on is installed.
+
 While you break a block, a thin bar at the bottom of the HUD shows your progress. It turns red if your tool cannot harvest the block. You can disable it under Content.
 
 Container previews show item icons and stack counts. In multiplayer, install Iaspis on the server for containers whose contents are unavailable to the client. The `inventory.preview` setting in `config/iaspis.cfg` controls previews on the client and whether the server shares inventory data. Use `harvest.enabled` to toggle harvest hints.
@@ -51,6 +53,8 @@ The HUD shows animal growth and breeding cooldowns, estimated horse speed and ju
 ## WAILA integrations
 
 Iaspis implements the startup IMC and provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. With ForgeMultipart installed, part providers and decorators are called for the parts in the targeted block.
+
+Integrations supplied by another mod can register with Iaspis directly. Features that came from handlers bundled with WAILA itself, such as Ender IO capacitor bank telemetry, require a separate add-on.
 
 Options registered by extensions appear under **Extensions** in Iaspis settings and are saved in `config/iaspis.cfg`. Options registered with `addConfigRemote` require Iaspis on the server. To enforce a registered option, set its value in the server’s `display` category and set the same key to `true` in the `waila_server` category. Clients show that setting as server-controlled.
 

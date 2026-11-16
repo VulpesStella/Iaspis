@@ -16,6 +16,7 @@ enum PreviewSample {
     BOSS_BAR("overlay.bossMode"),
     INVENTORY("inventory.preview"),
     HARVEST("harvest.enabled"),
+    HARVEST_STYLE("harvest.style"),
     HEALTH("health.enabled"),
     ARMOR("armor.enabled"),
     GROWTH("growth.enabled"),

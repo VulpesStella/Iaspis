@@ -23,16 +23,18 @@ final class HarvestHint {
     final List<ToolIcon> icons;
     final boolean harvestable;
     final boolean showStatus;
+    private final boolean requiresTool;
 
-    private HarvestHint(List<ToolIcon> icons, boolean harvestable, boolean showStatus) {
+    private HarvestHint(List<ToolIcon> icons, boolean harvestable, boolean requiresTool) {
         this.icons = icons;
         this.harvestable = harvestable;
-        this.showStatus = showStatus;
+        this.requiresTool = requiresTool;
+        this.showStatus = requiresTool || !harvestable;
     }
 
     static HarvestHint preview(Block block, boolean harvestable) {
         boolean requiresTool = !block.blockMaterial.isToolNotRequired() || requiresShears(block);
-        return new HarvestHint(findTools(block, 0, 3, requiresTool), harvestable, requiresTool || !harvestable);
+        return new HarvestHint(findTools(block, 0, 3, requiresTool), harvestable, requiresTool);
     }
 
     static HarvestHint create(Target target, List<String> lines) {
@@ -55,12 +57,28 @@ final class HarvestHint {
                 && !isEffective(Item.shears, block, target.getMetadata(), requiresTool)) {
             ItemStack shears = new ItemStack(Item.shears);
             if (((IShearable) block).isShearable(shears, target.getWorld(), hit.blockX, hit.blockY, hit.blockZ)) {
-                icons.add(new ToolIcon(shears, ""));
+                icons.add(new ToolIcon(shears, "shears", -1));
             }
         }
         if (icons.isEmpty()) return null;
         boolean harvestable = canHarvest(target);
-        return new HarvestHint(icons, harvestable, requiresTool || !harvestable);
+        return new HarvestHint(icons, harvestable, requiresTool);
+    }
+
+    void appendText(List<String> lines) {
+        if (!icons.isEmpty()) {
+            StringBuilder tools = new StringBuilder();
+            for (ToolIcon icon : icons) {
+                if (tools.length() > 0) tools.append(", ");
+                tools.append(icon.text());
+            }
+            lines.add(StatCollector.translateToLocalFormatted(
+                    requiresTool ? "iaspis.harvest.requiredTool" : "iaspis.harvest.effectiveTool", tools.toString()));
+        }
+        if (showStatus) {
+            lines.add((harvestable ? "\u00a7a" : "\u00a7c") + StatCollector.translateToLocal(
+                    harvestable ? "iaspis.harvest.canHarvest" : "iaspis.harvest.cannotHarvest"));
+        }
     }
 
     private static List<ToolIcon> findTools(Block block, int metadata, float hardness, boolean requiresTool) {
@@ -70,24 +88,22 @@ final class HarvestHint {
                 int level = MinecraftForge.getBlockHarvestLevel(block, metadata, TOOLS[i]);
                 Item[] tiers = ICONS[i];
                 if (level >= 0) {
-                    int highest = tiers.length - 1;
-                    icons.add(new ToolIcon(new ItemStack(tiers[Math.min(level, highest)]),
-                            level > highest ? Integer.toString(level) : ""));
+                    icons.add(new ToolIcon(new ItemStack(tiers[Math.min(level, tiers.length - 1)]), TOOLS[i], level));
                     continue;
                 }
-                for (Item tool : tiers) {
-                    if (isEffective(tool, block, metadata, requiresTool)) {
-                        icons.add(new ToolIcon(new ItemStack(tool), ""));
+                for (int tier = 0; tier < tiers.length; tier++) {
+                    if (isEffective(tiers[tier], block, metadata, requiresTool)) {
+                        icons.add(new ToolIcon(new ItemStack(tiers[tier]), TOOLS[i], tier));
                         break;
                     }
                 }
             }
             if (isEffective(Item.swordWood, block, metadata, requiresTool)) {
-                icons.add(new ToolIcon(new ItemStack(Item.swordWood), ""));
+                icons.add(new ToolIcon(new ItemStack(Item.swordWood), "sword", -1));
             }
         }
         if (requiresShears(block) || (block != Block.redstoneWire && isEffective(Item.shears, block, metadata, requiresTool))) {
-            icons.add(new ToolIcon(new ItemStack(Item.shears), ""));
+            icons.add(new ToolIcon(new ItemStack(Item.shears), "shears", -1));
         }
         return icons;
     }
@@ -112,10 +128,20 @@ final class HarvestHint {
     static final class ToolIcon {
         final ItemStack stack;
         final String levelBadge;
+        final String toolClass;
+        final int level;
 
-        ToolIcon(ItemStack stack, String levelBadge) {
+        ToolIcon(ItemStack stack, String toolClass, int level) {
             this.stack = stack;
-            this.levelBadge = levelBadge;
+            this.toolClass = toolClass;
+            this.level = level;
+            this.levelBadge = level > 3 ? Integer.toString(level) : "";
+        }
+
+        String text() {
+            if (levelBadge.isEmpty()) return stack.getDisplayName();
+            String tool = StatCollector.translateToLocal("iaspis.harvest.tool." + toolClass);
+            return StatCollector.translateToLocalFormatted("iaspis.harvest.toolTier", tool, levelBadge);
         }
     }
 }

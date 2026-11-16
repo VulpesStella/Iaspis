@@ -23,6 +23,7 @@ final class HudSettings {
         INVENTORY_DETAILS("inventory.detailLimit", 27, 0, 27, ""),
         INVENTORY_COLUMNS("inventory.columns", 9, 1, 18, ""),
         INVENTORY_NAMES("inventory.names", 0, 0, 9, ""),
+        HARVEST_STYLE("harvest.style", 0, 2),
         HEALTH_LIMIT("health.iconLimit", 40, 0, 200, ""),
         HEALTH_COLUMNS("health.columns", 10, 1, 20, ""),
         ARMOR_LIMIT("armor.iconLimit", 20, 0, 200, ""),
@@ -71,6 +72,8 @@ final class HudSettings {
     static final int LITE = 2;
     static final int ICON_INLINE = 1;
     static final int ICON_HIDDEN = 2;
+    static final int HARVEST_TEXT = 1;
+    static final int HARVESTABILITY_STYLE = 2;
     static final int BOSS_MOVE = 0;
     static final int BOSS_HIDE = 1;
     static final int BOSS_OVERLAP = 2;

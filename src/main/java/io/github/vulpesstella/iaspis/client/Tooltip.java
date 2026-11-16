@@ -165,16 +165,20 @@ final class Tooltip {
                 if (PreviewSample.ARMOR.enabled() || sample == PreviewSample.ARMOR_LIMIT) tooltip.armor = 18;
                 break;
             case HARVEST:
+            case HARVEST_STYLE:
             case HARVEST_CREATIVE:
             case HARVEST_NEW_LINE:
-                tooltip.icon = new ItemStack(Block.oreDiamond);
-                if (sample == PreviewSample.HARVEST_NEW_LINE || sample.enabled()) {
-                    tooltip.harvest = HarvestHint.preview(Block.oreDiamond, millis % 2400 >= 1200);
+                boolean shearPreview = sample == PreviewSample.HARVEST_STYLE
+                        && NumberOption.HARVEST_STYLE.get() == HudSettings.HARVESTABILITY_STYLE && millis % 4800 >= 2400;
+                Block harvestBlock = shearPreview ? Block.leaves : Block.oreDiamond;
+                tooltip.icon = new ItemStack(harvestBlock);
+                if (sample == PreviewSample.HARVEST_STYLE || sample == PreviewSample.HARVEST_NEW_LINE || sample.enabled()) {
+                    tooltip.applyHarvest(HarvestHint.preview(harvestBlock, millis % 2400 >= 1200), entityDetails, null);
                 }
                 break;
             case HARVEST_EFFECTIVE:
                 tooltip.icon = new ItemStack(Block.wood);
-                if (sample.enabled()) tooltip.harvest = HarvestHint.preview(Block.wood, true);
+                if (sample.enabled()) tooltip.applyHarvest(HarvestHint.preview(Block.wood, true), entityDetails, null);
                 break;
             case HARVEST_UNBREAKABLE:
                 tooltip.icon = new ItemStack(Block.bedrock);
@@ -377,7 +381,9 @@ final class Tooltip {
         if (!lite) {
             addBlockDetails(target, body);
             VanillaBlockDetails.append(target, this, body);
-            if (FluidTarget.fluid(block) == null && Iaspis.config().getBoolean("harvest.enabled")) harvest = HarvestHint.create(target, body);
+            if (FluidTarget.fluid(block) == null && PreviewSample.HARVEST.enabled()) {
+                applyHarvest(HarvestHint.create(target, body), body, target);
+            }
         }
         GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(block);
         List<String> tail = source(id == null ? null : Loader.instance().getIndexedModList().get(id.modId),
@@ -388,6 +394,24 @@ final class Tooltip {
         if (!lite) lines.addAll(multipartSection(Section.BODY, parts, blockSection(Section.BODY, target, direct, body)));
         bodyEnd = lines.size();
         lines.addAll(multipartSection(Section.TAIL, parts, blockSection(Section.TAIL, target, direct, tail)));
+    }
+
+    private void applyHarvest(HarvestHint hint, List<String> lines, Target target) {
+        int style = NumberOption.HARVEST_STYLE.get();
+        if (style == HudSettings.HARVESTABILITY_STYLE) {
+            if (target != null) {
+                HarvestabilityStyle.append(target, hint, lines);
+            } else if (hint != null) {
+                String color = HarvestabilityStyle.color(hint.harvestable);
+                String silk = icon.itemID == Block.oreDiamond.blockID ? color + "\u2712" : "";
+                String shears = icon.itemID == Block.leaves.blockID ? color + "\u2702" : "";
+                HarvestabilityStyle.append(hint, silk, shears, lines);
+            }
+        } else if (style == HudSettings.HARVEST_TEXT) {
+            if (hint != null) hint.appendText(lines);
+        } else {
+            harvest = hint;
+        }
     }
 
     private List<String> multipartSection(Section section, List<MultipartAccessor> parts, List<String> lines) {

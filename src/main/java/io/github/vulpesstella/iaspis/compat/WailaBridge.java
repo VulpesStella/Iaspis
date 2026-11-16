@@ -61,6 +61,8 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
             String value = message.getStringValue();
             try {
                 if ("register".equalsIgnoreCase(message.key)) {
+                    if ("WailaHarvestability".equals(message.getSender())
+                            && "squeek.wailaharvestability.WailaHandler.callbackRegister".equals(value)) continue;
                     int separator = value.lastIndexOf('.');
                     if (separator < 1 || separator == value.length() - 1) {
                         throw new IllegalArgumentException("Expected a fully qualified registration method");
