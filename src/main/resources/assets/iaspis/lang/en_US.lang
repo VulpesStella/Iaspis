@@ -1,4 +1,6 @@
 key.iaspis.toggle=Toggle Iaspis overlay
+iaspis.waila.settings=WAILA extensions
+iaspis.waila.locked=%s (server)
 iaspis.growth=Growth: %s%%
 iaspis.health=%.1f / %.1f
 

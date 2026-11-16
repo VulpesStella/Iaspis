@@ -6,6 +6,7 @@ import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
+import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -18,6 +19,7 @@ import org.lwjgl.opengl.GL11;
 final class HudSettingsScreen extends GuiScreen {
     private static final int DONE = 100;
     private static final int RESET = 101;
+    private static final int WAILA = 102;
     private static final int CATEGORY_BUTTON = 200;
     private static final int ROW_HEIGHT = 23;
     private static final int BUTTON_HEIGHT = 20;
@@ -114,6 +116,11 @@ final class HudSettingsScreen extends GuiScreen {
         }
         contentHeight = contentTop;
         int footerWidth = Math.min(120, settingsWidth);
+        if (!WailaBridge.INSTANCE.getModuleNames().isEmpty()) {
+            footerWidth = Math.min(footerWidth, (width - 2 * MARGIN - 2 * GAP) / 3);
+            buttonList.add(new GuiButton(WAILA, (width - footerWidth) / 2, height - 29,
+                    footerWidth, BUTTON_HEIGHT, translate("iaspis.waila.settings")));
+        }
         buttonList.add(new GuiButton(RESET, MARGIN, height - 29, footerWidth, BUTTON_HEIGHT, translate("iaspis.settings.reset")));
         buttonList.add(new GuiButton(DONE, width - MARGIN - footerWidth, height - 29,
                 footerWidth, BUTTON_HEIGHT, translate("gui.done")));
@@ -318,6 +325,8 @@ final class HudSettingsScreen extends GuiScreen {
         int id = button.id;
         if (id == DONE) {
             mc.displayGuiScreen(null);
+        } else if (id == WAILA) {
+            mc.displayGuiScreen(new WailaSettingsScreen(this));
         } else if (id == RESET) {
             for (NumberOption number : NumberOption.values()) number.set(number.fallback);
             for (PreviewSample setting : PreviewSample.values()) {

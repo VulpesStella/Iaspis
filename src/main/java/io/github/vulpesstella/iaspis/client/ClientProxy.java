@@ -2,27 +2,35 @@ package io.github.vulpesstella.iaspis.client;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import cpw.mods.fml.client.registry.KeyBindingRegistry;
 import cpw.mods.fml.common.TickType;
+import cpw.mods.fml.common.registry.TickRegistry;
+import cpw.mods.fml.relauncher.Side;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
+import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.INetworkManager;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.input.Keyboard;
 
 public final class ClientProxy extends CommonProxy {
     private final RemoteTargetData remote = new RemoteTargetData();
+    private RemoteWailaOptions remoteOptions;
 
     @Override
     public void init() {
         HudSettings.load();
+        remoteOptions = new RemoteWailaOptions();
+        TickRegistry.registerTickHandler(remoteOptions, Side.CLIENT);
         KeyBinding settings = new KeyBinding("key.iaspis.settings", Keyboard.KEY_ADD);
         final KeyBinding toggle = new KeyBinding("key.iaspis.toggle", Keyboard.KEY_NUMPAD1);
         final KeyBinding fluidKey = new KeyBinding("key.iaspis.fluid", Keyboard.KEY_NUMPAD2);
@@ -66,6 +74,22 @@ public final class ClientProxy extends CommonProxy {
             @Override
             public String getLabel() { return "Iaspis"; }
         });
+    }
+
+    @Override
+    public boolean hasWailaServer() {
+        Minecraft game = Minecraft.getMinecraft();
+        return game.thePlayer != null && TargetDataChannel.canRequest(game.thePlayer);
+    }
+
+    @Override
+    public Boolean forcedWailaOption(String key) {
+        return remoteOptions == null ? null : remoteOptions.forced(key);
+    }
+
+    @Override
+    public void receiveWailaOptions(INetworkManager manager, Map<String, Boolean> options) {
+        if (remoteOptions != null) remoteOptions.receive(manager, options);
     }
 
     @Override

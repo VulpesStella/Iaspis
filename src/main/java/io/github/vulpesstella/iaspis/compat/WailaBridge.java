@@ -2,6 +2,7 @@ package io.github.vulpesstella.iaspis.compat;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage;
 import io.github.vulpesstella.iaspis.Iaspis;
@@ -23,6 +25,10 @@ import mcp.mobius.waila.api.IWailaFMPDecorator;
 import mcp.mobius.waila.api.IWailaFMPProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 import mcp.mobius.waila.api.IWailaSummaryProvider;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.StatCollector;
 
 @SuppressWarnings("rawtypes") // The WAILA 1.5.2a registrar uses raw Class parameters.
 public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
@@ -33,9 +39,13 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     private final List<Registration<IWailaDataProvider>> blocks = new ArrayList<Registration<IWailaDataProvider>>();
     private final List<Registration<IWailaEntityProvider>> entities = new ArrayList<Registration<IWailaEntityProvider>>();
     private final List<Registration<IWailaBlockDecorator>> decorators = new ArrayList<Registration<IWailaBlockDecorator>>();
+    private final List<Registration<IWailaFMPProvider>> multipartProviders = new ArrayList<Registration<IWailaFMPProvider>>();
+    private final List<Registration<IWailaFMPDecorator>> multipartDecorators = new ArrayList<Registration<IWailaFMPDecorator>>();
     private final List<Registration<String>> syncedKeys = new ArrayList<Registration<String>>();
     private final Map<String, HashMap<String, String>> modules = new LinkedHashMap<String, HashMap<String, String>>();
-    private final Set<String> reported = new HashSet<String>();
+    private final Set<String> optionKeys = new LinkedHashSet<String>();
+    private final Set<String> remoteOptions = new HashSet<String>();
+    private final Set<String> reported = Collections.synchronizedSet(new HashSet<String>());
     private Logger log;
 
     private WailaBridge() {
@@ -84,22 +94,51 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
             modules.put(module, keys);
         }
         keys.put(key, label);
+        optionKeys.add(key);
     }
 
-    public void addConfig(String module, String key) { addConfig(module, key, key); }
-    public void addConfigRemote(String module, String key, String label) { addConfig(module, key, label); }
-    public void addConfigRemote(String module, String key) { addConfig(module, key); }
+    public void addConfig(String module, String key) { addConfig(module, key, "option." + key); }
+    public void addConfigRemote(String module, String key, String label) {
+        addConfig(module, key, label);
+        remoteOptions.add(key);
+    }
+    public void addConfigRemote(String module, String key) { addConfigRemote(module, key, "option." + key); }
     public Set<String> getModuleNames() { return new LinkedHashSet<String>(modules.keySet()); }
 
     public HashMap<String, String> getConfigKeys(String module) {
         Map<String, String> keys = modules.get(module);
-        return keys == null ? new HashMap<String, String>() : new LinkedHashMap<String, String>(keys);
+        HashMap<String, String> labels = new LinkedHashMap<String, String>();
+        if (keys != null) {
+            for (Map.Entry<String, String> key : keys.entrySet()) {
+                labels.put(key.getKey(), StatCollector.translateToLocal(key.getValue()));
+            }
+        }
+        return labels;
     }
 
     public boolean getConfig(String key) { return getConfig(key, true); }
 
     public boolean getConfig(String key, boolean defaultValue) {
+        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+            if (requiresServer(key) && !Iaspis.proxy.hasWailaServer()) return false;
+            Boolean forced = forcedOption(key);
+            if (forced != null) return forced;
+        }
         return Iaspis.config().getBoolean(key, defaultValue);
+    }
+
+    public boolean requiresServer(String key) { return remoteOptions.contains(key); }
+
+    public Boolean forcedOption(String key) {
+        return optionKeys.contains(key) ? Iaspis.proxy.forcedWailaOption(key) : null;
+    }
+
+    Map<String, Boolean> lockedOptions() {
+        Map<String, Boolean> options = new LinkedHashMap<String, Boolean>();
+        for (String key : optionKeys) {
+            if (Iaspis.config().isWailaOptionLocked(key)) options.put(key, Iaspis.config().getBoolean(key));
+        }
+        return options;
     }
 
     public List<IWailaDataProvider> blocks(Section section, Target target) {
@@ -115,7 +154,63 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     }
 
     public List<String> syncedKeys(int blockId, Object target, Object tile) {
-        return matching(syncedKeys, Section.BODY, blockId, target, tile);
+        List<String> keys = matching(syncedKeys, Section.BODY, blockId, target, tile);
+        if (hasMultipartProviders() && isMultipart(target) && !keys.contains("*")) keys.add("*");
+        return keys;
+    }
+
+    public List<MultipartAccessor> multipart(Target target) {
+        if (!hasMultipartProviders() || !isMultipart(target.getBlock())) return Collections.emptyList();
+        NBTTagCompound tag;
+        try {
+            tag = target.getNBTData();
+        } catch (RuntimeException e) {
+            report("Could not read multipart data", e);
+            return Collections.emptyList();
+        } catch (LinkageError e) {
+            report("Could not read multipart data", e);
+            return Collections.emptyList();
+        }
+        if (tag == null || !(tag.getTag("parts") instanceof NBTTagList)) return Collections.emptyList();
+        NBTTagList list = tag.getTagList("parts");
+        List<MultipartAccessor> parts = new ArrayList<MultipartAccessor>(list.tagCount());
+        for (int i = 0; i < list.tagCount(); i++) {
+            NBTBase entry = list.tagAt(i);
+            if (entry instanceof NBTTagCompound) {
+                NBTTagCompound part = (NBTTagCompound) entry;
+                String id = part.getString("id");
+                if (!id.isEmpty()) parts.add(new MultipartAccessor(target, id, part));
+            }
+        }
+        return parts;
+    }
+
+    public List<IWailaFMPProvider> multipartProviders(Section section, String id) {
+        return matchingPart(multipartProviders, section, id);
+    }
+
+    public List<IWailaFMPDecorator> multipartDecorators(String id) {
+        return matchingPart(multipartDecorators, Section.BODY, id);
+    }
+
+    private boolean hasMultipartProviders() {
+        return !multipartProviders.isEmpty() || !multipartDecorators.isEmpty();
+    }
+
+    static boolean isMultipart(Object block) {
+        Class<?> type = block == null ? null : block.getClass();
+        for (; type != null; type = type.getSuperclass()) {
+            if ("codechicken.multipart.BlockMultipart".equals(type.getName())) return true;
+        }
+        return false;
+    }
+
+    private static <T> List<T> matchingPart(List<Registration<T>> registrations, Section section, String id) {
+        Set<T> providers = new LinkedHashSet<T>();
+        for (Registration<T> registration : registrations) {
+            if (registration.section == section && id.equals(registration.matcher)) providers.add(registration.provider);
+        }
+        return new ArrayList<T>(providers);
     }
 
     private static <T> List<T> matching(List<Registration<T>> registrations, Section section,
@@ -123,9 +218,10 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
         Set<T> result = new LinkedHashSet<T>();
         for (Registration<T> registration : registrations) {
             if (registration.section == section && (registration.matcher.equals(blockId)
-                    || registration.matches(target) || registration.matches(tile))) {
-                result.add(registration.provider);
-            }
+                    || registration.matches(target))) result.add(registration.provider);
+        }
+        for (Registration<T> registration : registrations) {
+            if (registration.section == section && registration.matches(tile)) result.add(registration.provider);
         }
         return new ArrayList<T>(result);
     }
@@ -206,11 +302,22 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
         syncedKeys.add(new Registration<String>(Section.BODY, target, key));
     }
 
-    // These legacy hooks require a multipart or documentation UI integration.
-    public void registerHeadProvider(IWailaFMPProvider provider, String part) {}
-    public void registerBodyProvider(IWailaFMPProvider provider, String part) {}
-    public void registerTailProvider(IWailaFMPProvider provider, String part) {}
-    public void registerDecorator(IWailaFMPDecorator provider, String part) {}
+    public void registerHeadProvider(IWailaFMPProvider provider, String part) {
+        multipartProviders.add(new Registration<IWailaFMPProvider>(Section.HEAD, part, provider));
+    }
+
+    public void registerBodyProvider(IWailaFMPProvider provider, String part) {
+        multipartProviders.add(new Registration<IWailaFMPProvider>(Section.BODY, part, provider));
+    }
+
+    public void registerTailProvider(IWailaFMPProvider provider, String part) {
+        multipartProviders.add(new Registration<IWailaFMPProvider>(Section.TAIL, part, provider));
+    }
+
+    public void registerDecorator(IWailaFMPDecorator provider, String part) {
+        multipartDecorators.add(new Registration<IWailaFMPDecorator>(Section.BODY, part, provider));
+    }
+
     public void registerDocTextFile(String filename) {}
     public void registerShortDataProvider(IWailaSummaryProvider provider, Class item) {}
 }

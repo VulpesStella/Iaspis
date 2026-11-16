@@ -1,4 +1,6 @@
 key.iaspis.toggle=切换 Iaspis 提示
+iaspis.waila.settings=WAILA 扩展
+iaspis.waila.locked=%s（服务端）
 iaspis.growth=成熟度：%s%%
 iaspis.health=%.1f / %.1f
 

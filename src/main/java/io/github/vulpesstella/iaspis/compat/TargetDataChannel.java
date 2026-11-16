@@ -75,6 +75,16 @@ public final class TargetDataChannel implements IPacketHandler {
 
     @Override
     public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
+        if (WailaOptionsChannel.NAME.equals(packet.channel)) {
+            try {
+                if (!(player instanceof EntityPlayerMP) || permitRequest((EntityPlayerMP) player)) {
+                    WailaOptionsChannel.receive(manager, packet, player);
+                }
+            } catch (IOException e) {
+                WailaBridge.INSTANCE.report("Invalid Iaspis WAILA options packet", e);
+            }
+            return;
+        }
         if (!NAME.equals(packet.channel) || packet.data == null || packet.data.length > MAX_PACKET) return;
         DataInputStream input = new DataInputStream(new ByteArrayInputStream(packet.data));
         try {
@@ -153,8 +163,15 @@ public final class TargetDataChannel implements IPacketHandler {
         // The brewing stand's selectable base sits near the bottom of the block.
         double hitHeight = block == Block.brewingStand ? 0.0625 : 0.5;
         Vec3 point = Vec3.createVectorHelper(x + 0.5, y + hitHeight, z + 0.5);
-        MovingObjectPosition hit = world.rayTraceBlocks_do_do(eyes, point, false, true);
-        if (hit == null || hit.blockX != x || hit.blockY != y || hit.blockZ != z) return;
+        boolean multipart = WailaBridge.isMultipart(block);
+        MovingObjectPosition hit = world.rayTraceBlocks_do_do(eyes, point, false, !multipart);
+        if (!hitsBlock(hit, x, y, z) && multipart) {
+            // Thin multipart covers can miss a ray aimed at the center of their container.
+            Vec3 look = player.getLook(1);
+            Vec3 end = eyes.addVector(look.xCoord * 8, look.yCoord * 8, look.zCoord * 8);
+            hit = world.rayTraceBlocks_do_do(eyes, end, false, false);
+        }
+        if (!hitsBlock(hit, x, y, z)) return;
 
         WailaBridge bridge = WailaBridge.INSTANCE;
         List<String> keys = bridge.syncedKeys(id, block, tile);
@@ -209,6 +226,10 @@ public final class TargetDataChannel implements IPacketHandler {
         }
         EntityHudData.append(entity, data);
         return data;
+    }
+
+    private static boolean hitsBlock(MovingObjectPosition hit, int x, int y, int z) {
+        return hit != null && hit.blockX == x && hit.blockY == y && hit.blockZ == z;
     }
 
     private static NBTTagCompound select(NBTTagCompound source, List<String> keys) {

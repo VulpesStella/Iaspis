@@ -5,10 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.compat.MultipartAccessor;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import io.github.vulpesstella.iaspis.compat.HudProviderRegistry;
 import mcp.mobius.waila.api.IWailaBlockDecorator;
+import mcp.mobius.waila.api.IWailaFMPDecorator;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -97,7 +100,12 @@ public final class Overlay extends Gui {
                 if (target != null) {
                     boolean details = detailsKey.keyCode != 0 && GameSettings.isKeyDown(detailsKey);
                     boolean lite = NumberOption.MODE.get() == HudSettings.LITE && !details;
-                    lastTooltip = new Tooltip(target, details, detailsKeyName(), lite);
+                    HudProviderRegistry.Changes changes = HudProviderRegistry.collect(target, details);
+                    if (changes.hidden) {
+                        resetTransition();
+                        return;
+                    }
+                    lastTooltip = new Tooltip(target, details, detailsKeyName(), lite, changes);
                     breaking = BlockBreakingProgress.read(game.playerController, target, event.partialTicks);
                 }
             } finally {
@@ -662,6 +670,21 @@ public final class Overlay extends Gui {
                 decoration.close();
             }
         }
+        for (MultipartAccessor part : bridge.multipart(target)) {
+            for (IWailaFMPDecorator decorator : bridge.multipartDecorators(part.getID())) {
+                RenderScope decoration = new RenderScope();
+                try {
+                    GL11.glDepthMask(false);
+                    decorator.decorateBlock(target.getStack(), part, bridge);
+                } catch (RuntimeException e) {
+                    bridge.report(decorator.getClass().getName(), e);
+                } catch (LinkageError e) {
+                    bridge.report(decorator.getClass().getName(), e);
+                } finally {
+                    decoration.close();
+                }
+            }
+        }
     }
 
     private Target target(float partialTicks, boolean request, boolean hudAim) {
@@ -692,7 +715,13 @@ public final class Overlay extends Gui {
             int id = game.theWorld.getBlockId(hit.blockX, hit.blockY, hit.blockZ);
             Block block = Block.blocksList[id];
             if (block == null) return null;
-            stack = block.getPickBlock(hit, game.theWorld, hit.blockX, hit.blockY, hit.blockZ);
+            try {
+                stack = block.getPickBlock(hit, game.theWorld, hit.blockX, hit.blockY, hit.blockZ);
+            } catch (RuntimeException e) {
+                WailaBridge.INSTANCE.report("Could not pick block " + block.getClass().getName(), e);
+            } catch (LinkageError e) {
+                WailaBridge.INSTANCE.report("Could not pick block " + block.getClass().getName(), e);
+            }
             if (stack == null) stack = new ItemStack(id, 1,
                     game.theWorld.getBlockMetadata(hit.blockX, hit.blockY, hit.blockZ));
             if (stack.getItem() == null) stack = null;

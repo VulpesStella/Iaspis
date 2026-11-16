@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.api.HudTarget;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaEntityAccessor;
 import net.minecraft.block.Block;
@@ -22,7 +23,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
 
-public final class Target implements IWailaDataAccessor, IWailaEntityAccessor {
+public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, HudTarget {
     private final World world;
     private final EntityPlayer player;
     private final MovingObjectPosition hit;

@@ -7,6 +7,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkMod;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import io.github.vulpesstella.iaspis.compat.WailaOptionsChannel;
 import net.minecraft.tileentity.TileEntityBrewingStand;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.tileentity.TileEntityHopper;
@@ -16,7 +17,7 @@ import net.minecraft.tileentity.TileEntityRecordPlayer;
 @Mod(modid = BuildConstants.MOD_ID, name = BuildConstants.MOD_NAME,
         version = BuildConstants.MOD_VERSION, acceptedMinecraftVersions = "[1.6.4]")
 @NetworkMod(channels = { TargetDataChannel.NAME, TargetDataChannel.TANK_CAPABILITY,
-        TargetDataChannel.MACHINE_CAPABILITY }, packetHandler = TargetDataChannel.class,
+        TargetDataChannel.MACHINE_CAPABILITY, WailaOptionsChannel.NAME }, packetHandler = TargetDataChannel.class,
         clientSideRequired = false, serverSideRequired = false)
 public final class Iaspis {
     private static IaspisConfig config;

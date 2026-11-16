@@ -50,9 +50,26 @@ The HUD shows animal growth and breeding cooldowns, estimated horse speed and ju
 
 ## WAILA integrations
 
-Iaspis implements the startup IMC and block and entity provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. Provider options are available in `config/iaspis.cfg`.
+Iaspis implements the startup IMC and provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. With ForgeMultipart installed, part providers and decorators are called for the parts in the targeted block.
 
-Forge Multipart-specific providers, WAILA documentation hooks, and server-locked configuration are outside the current compatibility scope.
+Options registered by extensions appear under **WAILA extensions** in Iaspis settings and are saved in `config/iaspis.cfg`. Options registered with `addConfigRemote` require Iaspis on the server. To enforce a registered option, set its value in the server’s `display` category and set the same key to `true` in the `waila_server` category. Clients show that setting as server-controlled.
+
+WAILA documentation and item summary hooks are outside the current compatibility scope.
+
+## Iaspis HUD providers
+
+Add-ons can register a client-side provider with `io.github.vulpesstella.iaspis.api.HudProviders`. Register during client initialization. The target type can be a block, tile entity, entity, or an interface implemented by one of them. Install the add-on on the client to show its tooltip changes. Providers work with client-side target data.
+
+```java
+HudProviders.register(MyMachineTile.class, 100, new HudProviders.Provider() {
+    @Override
+    public void update(HudTarget target, boolean detailed, HudProviders.Tooltip tooltip) {
+        if (detailed) tooltip.addLine("Machine serial: " + ((MyMachineTile) target.getTileEntity()).serial());
+    }
+});
+```
+
+Import `HudProviders` and `HudTarget` from `io.github.vulpesstella.iaspis.api`. The highest-priority provider that supplies a name or icon wins that override. Body lines from every provider appear in priority order below the standard details. Equal priorities follow registration order. `hide()` suppresses the HUD for the current target immediately.
 
 ## Building
 

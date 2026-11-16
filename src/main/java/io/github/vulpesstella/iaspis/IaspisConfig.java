@@ -63,6 +63,10 @@ public final class IaspisConfig {
         return DisplayMode.values()[getInt(TANK_DISPLAY, DisplayMode.ON.ordinal(), 0, DisplayMode.DETAILS.ordinal())];
     }
 
+    public synchronized boolean isWailaOptionLocked(String key) {
+        return file.hasKey("waila_server", key) && file.get("waila_server", key, false).getBoolean(false);
+    }
+
     public synchronized void save() {
         if (file.hasChanged()) file.save();
     }

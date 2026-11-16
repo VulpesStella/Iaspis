@@ -13,9 +13,11 @@ import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
+import io.github.vulpesstella.iaspis.compat.HudProviderRegistry.Changes;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
+import io.github.vulpesstella.iaspis.compat.MultipartAccessor;
 import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import io.github.vulpesstella.iaspis.compat.WailaBridge.Section;
@@ -23,6 +25,7 @@ import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
 import mcp.mobius.waila.api.IWailaBlock;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaEntityProvider;
+import mcp.mobius.waila.api.IWailaFMPProvider;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -39,6 +42,8 @@ final class Tooltip {
     private static final WailaBridge BRIDGE = WailaBridge.INSTANCE;
 
     final List<String> lines = new ArrayList<String>();
+    private boolean hasHead;
+    private int bodyEnd;
     ItemStack icon;
     Fluid fluid;
     List<TankPreview> tanks = Collections.emptyList();
@@ -62,8 +67,24 @@ final class Tooltip {
     }
 
     Tooltip(Target target, boolean details, String detailKey, boolean lite) {
+        this(target, details, detailKey, lite, null);
+    }
+
+    Tooltip(Target target, boolean details, String detailKey, boolean lite, Changes changes) {
         if (target.getBlock() != null) buildBlock(target, lite);
         else if (target.getEntity() != null) buildEntity(target, lite);
+
+        if (changes != null) {
+            if (!lite) lines.addAll(bodyEnd, changes.lines);
+            if (changes.name != null) {
+                if (hasHead) lines.set(0, changes.name);
+                else lines.add(0, changes.name);
+            }
+            if (changes.icon != null) {
+                icon = changes.icon;
+                fluid = null;
+            }
+        }
 
         if (lite) return;
         List<TankPreview> tankPreview = target.getTankPreview();
@@ -356,9 +377,34 @@ final class Tooltip {
         GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(block);
         List<String> tail = source(id == null ? null : Loader.instance().getIndexedModList().get(id.modId),
                 block.getClass());
-        lines.addAll(blockSection(Section.HEAD, target, direct, head));
-        if (!lite) lines.addAll(blockSection(Section.BODY, target, direct, body));
-        lines.addAll(blockSection(Section.TAIL, target, direct, tail));
+        List<MultipartAccessor> parts = BRIDGE.multipart(target);
+        lines.addAll(multipartSection(Section.HEAD, parts, blockSection(Section.HEAD, target, direct, head)));
+        hasHead = !lines.isEmpty();
+        if (!lite) lines.addAll(multipartSection(Section.BODY, parts, blockSection(Section.BODY, target, direct, body)));
+        bodyEnd = lines.size();
+        lines.addAll(multipartSection(Section.TAIL, parts, blockSection(Section.TAIL, target, direct, tail)));
+    }
+
+    private List<String> multipartSection(Section section, List<MultipartAccessor> parts, List<String> lines) {
+        for (MultipartAccessor part : parts) {
+            for (IWailaFMPProvider provider : BRIDGE.multipartProviders(section, part.getID())) {
+                try {
+                    List<String> updated;
+                    switch (section) {
+                        case HEAD: updated = provider.getWailaHead(icon, lines, part, BRIDGE); break;
+                        case BODY: updated = provider.getWailaBody(icon, lines, part, BRIDGE); break;
+                        case TAIL: updated = provider.getWailaTail(icon, lines, part, BRIDGE); break;
+                        default: throw new AssertionError(section);
+                    }
+                    lines = keep(updated, lines);
+                } catch (RuntimeException e) {
+                    BRIDGE.report(provider.getClass().getName(), e);
+                } catch (LinkageError e) {
+                    BRIDGE.report(provider.getClass().getName(), e);
+                }
+            }
+        }
+        return lines;
     }
 
     private ItemStack pickStack(Target target, IWailaBlock direct) {
@@ -463,7 +509,9 @@ final class Tooltip {
         if (!lite) VanillaEntityDetails.append(target, entity, this, body);
         String name = VanillaEntityDetails.name(entity, icon);
         lines.addAll(entitySection(Section.HEAD, target, entity, section(name)));
+        hasHead = !lines.isEmpty();
         if (!lite) lines.addAll(entitySection(Section.BODY, target, entity, body));
+        bodyEnd = lines.size();
         lines.addAll(entitySection(Section.TAIL, target, entity,
                 source(registration == null ? null : registration.getContainer(), entity.getClass())));
     }
