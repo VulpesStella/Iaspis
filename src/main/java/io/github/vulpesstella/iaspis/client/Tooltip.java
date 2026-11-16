@@ -1,5 +1,6 @@
 package io.github.vulpesstella.iaspis.client;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
+import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import io.github.vulpesstella.iaspis.compat.WailaBridge.Section;
 import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
@@ -37,6 +39,8 @@ final class Tooltip {
     ItemStack icon;
     Fluid fluid;
     List<TankPreview> tanks = Collections.emptyList();
+    MachinePreview energy = MachinePreview.EMPTY;
+    float processing;
     HarvestHint harvest;
     List<ItemStack> inventory = Collections.emptyList();
     List<ItemStack> furnaceSlots = Collections.emptyList();
@@ -57,6 +61,12 @@ final class Tooltip {
         if (lite) return;
         List<TankPreview> tankPreview = target.getTankPreview();
         if (!PreviewSample.TANK_DETAILS.enabled() || details) tanks = tankPreview;
+        MachinePreview machine = target.getMachinePreview();
+        boolean showMachine = !PreviewSample.MACHINE_DETAILS.enabled() || details;
+        boolean energyAvailable = machine.unit != null && PreviewSample.ENERGY.enabled();
+        boolean processingAvailable = machine.progress > 0 && PreviewSample.PROCESSING.enabled();
+        if (showMachine && energyAvailable) energy = machine;
+        if (showMachine && processingAvailable) processing = machine.progress;
         InventoryPreview preview = target.getInventoryPreview();
         boolean showInventory = true;
         if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
@@ -64,7 +74,7 @@ final class Tooltip {
             showInventory = !applyFurnaceProgress(preview.furnaceSlots, progress);
         }
         if (showInventory) applyInventory(preview.stacks, preview.truncated, details, detailKey);
-        if (tanks.isEmpty() && !tankPreview.isEmpty()) {
+        if ((tanks.isEmpty() && !tankPreview.isEmpty()) || (!showMachine && (energyAvailable || processingAvailable))) {
             String hint = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
             if (!lines.contains(hint)) lines.add(hint);
         }
@@ -173,6 +183,23 @@ final class Tooltip {
                     }
                 }
                 break;
+            case ENERGY:
+            case ENERGY_BAR:
+            case PROCESSING:
+            case MACHINE_DETAILS:
+                tooltip.icon = new ItemStack(Block.furnaceIdle);
+                entityName = StatCollector.translateToLocal("iaspis.machine.example");
+                boolean energySample = sample != PreviewSample.PROCESSING && PreviewSample.ENERGY.enabled();
+                boolean progressSample = (sample == PreviewSample.PROCESSING || sample == PreviewSample.MACHINE_DETAILS)
+                        && PreviewSample.PROCESSING.enabled();
+                if ((energySample || progressSample) && PreviewSample.MACHINE_DETAILS.enabled()
+                        && millis % 3200 < 1600) {
+                    detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", "Shift");
+                } else {
+                    if (energySample) tooltip.energy = new MachinePreview(MachinePreview.EnergyUnit.EU, 1800, 4000, 0);
+                    if (progressSample) tooltip.processing = 0.25F + (millis % 2200) / 4400.0F;
+                }
+                break;
             case BOSS_BAR:
                 tooltip.icon = new ItemStack(Block.obsidian);
                 break;
@@ -233,6 +260,13 @@ final class Tooltip {
         String name = tank.fluid == null ? StatCollector.translateToLocal(
                 tank.amount == 0 ? "iaspis.tank.empty" : "iaspis.tank.unknown") : fluidName(tank.fluid);
         return StatCollector.translateToLocalFormatted("iaspis.tank.amount", name, tank.amount, tank.capacity);
+    }
+
+    static String energyLabel(MachinePreview energy) {
+        NumberFormat quantities = NumberFormat.getNumberInstance();
+        quantities.setMaximumFractionDigits(2);
+        return StatCollector.translateToLocalFormatted("iaspis.machine.energyAmount",
+                quantities.format(energy.stored), quantities.format(energy.capacity), energy.unit.name());
     }
 
     private static String fluidName(Fluid fluid) {

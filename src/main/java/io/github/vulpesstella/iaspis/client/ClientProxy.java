@@ -8,6 +8,7 @@ import cpw.mods.fml.common.TickType;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
+import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
@@ -62,7 +63,7 @@ public final class ClientProxy extends CommonProxy {
     }
 
     @Override
-    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks) {
-        remote.receive(sequence, data, inventory, tanks);
+    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks, MachinePreview machine) {
+        remote.receive(sequence, data, inventory, tanks, machine);
     }
 }

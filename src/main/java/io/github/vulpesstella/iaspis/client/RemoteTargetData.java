@@ -5,6 +5,8 @@ import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
+import io.github.vulpesstella.iaspis.compat.MachinePreview;
+import io.github.vulpesstella.iaspis.compat.MachineProviders;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
@@ -27,6 +29,7 @@ final class RemoteTargetData {
     private NBTTagCompound data;
     private InventoryPreview inventory = InventoryPreview.EMPTY;
     private List<TankPreview> tanks = Collections.emptyList();
+    private MachinePreview machine = MachinePreview.EMPTY;
 
     void apply(Target target, boolean request) {
         boolean sameTarget = matches(target, requested);
@@ -35,6 +38,7 @@ final class RemoteTargetData {
             data = null;
             inventory = InventoryPreview.EMPTY;
             tanks = Collections.emptyList();
+            machine = MachinePreview.EMPTY;
         }
         Entity entity = target.getEntity();
         if ((entity == null && target.getTileEntity() == null) || entity instanceof EntityPlayer
@@ -49,7 +53,11 @@ final class RemoteTargetData {
         boolean tank = target.getTileEntity() instanceof IFluidHandler && PreviewSample.TANK.enabled()
                 && TargetDataChannel.supportsTanks(target.getPlayer());
         if (fresh && tank) target.setTankPreview(tanks);
-        if (!request || now - nextRequest < 0 || (!preview && !tank && bridge.syncedKeys(target.getBlockID(),
+        boolean machinePreview = TargetDataChannel.supportsMachines(target.getPlayer())
+                && (PreviewSample.ENERGY.enabled() || PreviewSample.PROCESSING.enabled())
+                && MachineProviders.supports(target.getTileEntity());
+        if (fresh && machinePreview) target.setMachinePreview(machine);
+        if (!request || now - nextRequest < 0 || (!preview && !tank && !machinePreview && bridge.syncedKeys(target.getBlockID(),
                 entity == null ? target.getBlock() : entity, target.getTileEntity()).isEmpty())) return;
 
         requested = target;
@@ -57,11 +65,12 @@ final class RemoteTargetData {
         TargetDataChannel.request(target, ++sequence);
     }
 
-    void receive(int response, NBTTagCompound tag, InventoryPreview preview, List<TankPreview> tanks) {
+    void receive(int response, NBTTagCompound tag, InventoryPreview preview, List<TankPreview> tanks, MachinePreview machine) {
         if (response == sequence && requested != null) {
             data = tag;
             inventory = preview;
             this.tanks = tanks;
+            this.machine = machine;
             dataTime = System.nanoTime();
         }
     }

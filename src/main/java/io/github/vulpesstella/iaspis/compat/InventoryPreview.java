@@ -96,7 +96,8 @@ public final class InventoryPreview {
         boolean orderedSlots = input.available() == slotBytes;
         if (input.available() > slotBytes) {
             input.mark(4);
-            orderedSlots = input.readInt() != TankPreview.MARKER;
+            // Trailer markers are negative and legacy item IDs are nonnegative.
+            orderedSlots = input.readInt() >= 0;
             input.reset();
         }
         if (orderedSlots) {

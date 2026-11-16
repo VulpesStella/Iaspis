@@ -44,7 +44,8 @@ public final class Overlay extends Gui {
     private static final int SLOT_SIZE = 18;
     private static final int ICON_STEP = 9;
     private static final int VITAL_ROW_HEIGHT = 11;
-    private static final int TANK_BAR_HEIGHT = 13;
+    private static final int METER_HEIGHT = 13;
+    private static final int PROGRESS_ARROW_WIDTH = 24;
     private static final ResourceLocation ASCII_FONT = new ResourceLocation("textures/font/ascii.png");
     private static final ResourceLocation UNICODE_DIGITS = new ResourceLocation("textures/font/unicode_page_00.png");
     private final Minecraft game = Minecraft.getMinecraft();
@@ -220,12 +221,21 @@ public final class Overlay extends Gui {
             tankLabels.add(label);
             tankWidth = Math.max(tankWidth, game.fontRenderer.getStringWidth(label) + (tankBar ? 6 : 0));
         }
-        int tankHeight = tankBar ? TANK_BAR_HEIGHT + 2 : 10;
+        int tankHeight = meterRowHeight(tankBar);
+        boolean energyBar = PreviewSample.ENERGY_BAR.enabled();
+        String energyLabel = tooltip.energy.unit == null ? null : Tooltip.energyLabel(tooltip.energy);
+        int energyWidth = energyLabel == null ? 0 : game.fontRenderer.getStringWidth(energyLabel) + (energyBar ? 6 : 0);
+        String progressLabel = tooltip.processing == 0 ? null
+                : StatCollector.translateToLocalFormatted("iaspis.machine.progressAmount", (int) (tooltip.processing * 100));
+        int progressWidth = progressLabel == null ? 0 : PROGRESS_ARROW_WIDTH + 5 + game.fontRenderer.getStringWidth(progressLabel);
+        int machineWidth = Math.max(energyWidth, progressWidth);
         int width = Math.max(Math.max(headerWidth, columns * SLOT_SIZE),
-                Math.max(Math.max(harvestWidth, furnaceWidth), Math.max(Math.max(healthWidth, armorWidth), tankWidth))) + 12;
+                Math.max(Math.max(harvestWidth, furnaceWidth),
+                        Math.max(Math.max(healthWidth, armorWidth), Math.max(tankWidth, machineWidth)))) + 12;
         int height = headerHeight + harvestHeight + rows * SLOT_SIZE + 10
                 + (healthRows + extraHealthRows + armorRows) * VITAL_ROW_HEIGHT
-                + (furnaceWidth > 0 ? SLOT_SIZE : 0) + tankLabels.size() * tankHeight;
+                + (furnaceWidth > 0 ? SLOT_SIZE : 0) + tankLabels.size() * tankHeight
+                + (energyLabel == null ? 0 : meterRowHeight(energyBar)) + (progressLabel == null ? 0 : SLOT_SIZE);
         if (sample == PreviewSample.ANCHOR_Y) {
             scale = Math.min(scale, areaHeight / (2.0F * (height + 8)));
             layoutWidth = (int) (areaWidth / scale);
@@ -329,6 +339,25 @@ public final class Overlay extends Gui {
                     drawTank(tooltip.tanks.get(i), tankLabels.get(i), left + 6, detailTop, bounds.width - 12, tankBar);
                     detailTop += tankHeight;
                 }
+                if (energyLabel != null) {
+                    int meterLeft = left + 6;
+                    if (energyBar) {
+                        int fill = drawMeter(meterLeft, detailTop, bounds.width - 12,
+                                tooltip.energy.stored / tooltip.energy.capacity);
+                        if (fill > 0) {
+                            drawRect(meterLeft + 1, detailTop + 1, meterLeft + fill + 1,
+                                    detailTop + METER_HEIGHT - 1, 0xffaa5924);
+                        }
+                    }
+                    drawMeterLabel(energyLabel, meterLeft, detailTop, energyBar);
+                    detailTop += meterRowHeight(energyBar);
+                }
+                if (progressLabel != null) {
+                    drawProgressArrow(left + 6, detailTop + 1, tooltip.processing);
+                    game.fontRenderer.drawStringWithShadow(progressLabel,
+                            left + 11 + PROGRESS_ARROW_WIDTH, detailTop + 5, 0xffffff);
+                    detailTop += SLOT_SIZE;
+                }
                 if (columns > 0) drawInventory(tooltip.inventory, columns, left + 6, detailTop, scale != 1);
                 if (breaking != null) drawBreakingProgress(breaking, bounds);
             } finally {
@@ -341,14 +370,27 @@ public final class Overlay extends Gui {
     }
 
     private void drawTank(TankPreview tank, String label, int left, int top, int width, boolean bar) {
-        if (bar && width > 2) {
-            drawRect(left, top, left + width, top + TANK_BAR_HEIGHT, 0xff424454);
-            drawRect(left + 1, top + 1, left + width - 1, top + TANK_BAR_HEIGHT - 1, 0xff191a22);
-            int fill = (int) Math.min(width - 2L, (width - 2L) * tank.amount / tank.capacity);
+        if (bar) {
+            int fill = drawMeter(left, top, width, (double) tank.amount / tank.capacity);
             if (tank.fluid != null && fill > 0) {
-                drawFluid(tank.fluid, tank.amount, left + 1, top + 1, fill, TANK_BAR_HEIGHT - 2);
+                drawFluid(tank.fluid, tank.amount, left + 1, top + 1, fill, METER_HEIGHT - 2);
             }
         }
+        drawMeterLabel(label, left, top, bar);
+    }
+
+    private static int meterRowHeight(boolean bar) {
+        return bar ? METER_HEIGHT + 2 : 10;
+    }
+
+    private int drawMeter(int left, int top, int width, double fraction) {
+        if (width <= 2) return 0;
+        drawRect(left, top, left + width, top + METER_HEIGHT, 0xff424454);
+        drawRect(left + 1, top + 1, left + width - 1, top + METER_HEIGHT - 1, 0xff191a22);
+        return (int) ((width - 2) * Math.min(1, fraction));
+    }
+
+    private void drawMeterLabel(String label, int left, int top, boolean bar) {
         game.fontRenderer.drawStringWithShadow(label, left + (bar ? 3 : 0), top + (bar ? 2 : 0), 0xffffff);
     }
 
@@ -442,10 +484,11 @@ public final class Overlay extends Gui {
             arrowX += 2 * SLOT_SIZE + 2;
             drawStack(tooltip.furnaceSlots.get(2), arrowX + 27, top + 1, scaled);
         }
-        drawProgressArrow(arrowX, top + 1, tooltip.cookTime * 24 / 200);
+        drawProgressArrow(arrowX, top + 1, tooltip.cookTime / 200.0F);
     }
 
-    private void drawProgressArrow(int x, int y, int filled) {
+    private void drawProgressArrow(int x, int y, float fraction) {
+        int filled = (int) (fraction * PROGRESS_ARROW_WIDTH);
         for (int row = 0; row < 16; row++) {
             int start = row >= 5 && row < 11 ? 0 : 15;
             int end = 16 + Math.min(row, 15 - row);

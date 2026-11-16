@@ -46,7 +46,11 @@ BREAKING("breaking.enabled"),
     FLUID_TARGET("fluid.target"),
     TANK("tank.preview"),
     TANK_DETAILS("tank.details", false),
-    TANK_BAR("tank.bar");
+    TANK_BAR("tank.bar"),
+    ENERGY("machine.energy"),
+    PROCESSING("machine.progress"),
+    ENERGY_BAR("machine.energyBar"),
+    MACHINE_DETAILS("machine.details", false);
 
     final String key;
     final boolean defaultEnabled;

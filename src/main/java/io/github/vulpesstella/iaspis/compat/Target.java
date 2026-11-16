@@ -36,6 +36,11 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor {
     private boolean readNbt;
     private InventoryPreview inventory;
     private List<TankPreview> tanks = Collections.emptyList();
+    private MachinePreview machine = MachinePreview.EMPTY;
+
+    public MachinePreview getMachinePreview() { return machine; }
+
+    public void setMachinePreview(MachinePreview machine) { this.machine = machine; }
 
     public List<TankPreview> getTankPreview() { return tanks; }
 

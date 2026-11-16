@@ -34,6 +34,7 @@ import net.minecraftforge.fluids.IFluidHandler;
 public final class TargetDataChannel implements IPacketHandler {
     public static final String NAME = "IaspisData";
     public static final String TANK_CAPABILITY = "IaspisTanks";
+    public static final String MACHINE_CAPABILITY = "IaspisMachines";
     private static final int MAX_PACKET = 30000;
     private static final int REQUEST_SIZE = 21;
     private static final long MIN_INTERVAL = 150000000L;
@@ -45,6 +46,10 @@ public final class TargetDataChannel implements IPacketHandler {
 
     public static boolean supportsTanks(EntityPlayer player) {
         return NetworkRegistry.instance().isChannelActive(TANK_CAPABILITY, (Player) player);
+    }
+
+    public static boolean supportsMachines(EntityPlayer player) {
+        return NetworkRegistry.instance().isChannelActive(MACHINE_CAPABILITY, (Player) player);
     }
 
     public static void request(Target target, int sequence) {
@@ -75,13 +80,15 @@ public final class TargetDataChannel implements IPacketHandler {
                 NBTTagCompound data = CompressedStreamTools.read(input);
                 InventoryPreview inventory = InventoryPreview.EMPTY;
                 List<TankPreview> tanks = Collections.emptyList();
+                MachinePreview machine = MachinePreview.EMPTY;
                 // Older Iaspis servers end the response after the legacy NBT compound.
                 if (input.available() > 0) {
                     if (!input.readBoolean()) data = null;
                     inventory = InventoryPreview.read(input);
                     tanks = TankPreview.read(input);
+                    machine = MachinePreview.read(input);
                 }
-                Iaspis.proxy.receiveTargetData(sequence, data, inventory, tanks);
+                Iaspis.proxy.receiveTargetData(sequence, data, inventory, tanks, machine);
                 return;
             }
             if (packet.data.length != REQUEST_SIZE) return;
@@ -97,7 +104,8 @@ public final class TargetDataChannel implements IPacketHandler {
                 return;
             }
             NBTTagCompound data = entityData(sender, x);
-            if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY, Collections.<TankPreview>emptyList());
+            if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY,
+                    Collections.<TankPreview>emptyList(), MachinePreview.EMPTY);
         } catch (IOException e) {
             WailaBridge.INSTANCE.report("Invalid Iaspis target data packet", e);
         } catch (RuntimeException e) {
@@ -106,7 +114,7 @@ public final class TargetDataChannel implements IPacketHandler {
     }
 
     private static void sendResponse(EntityPlayerMP player, int sequence, NBTTagCompound tag,
-                                     InventoryPreview inventory, List<TankPreview> tanks) throws IOException {
+                                     InventoryPreview inventory, List<TankPreview> tanks, MachinePreview machine) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(bytes);
         output.writeInt(sequence);
@@ -114,8 +122,9 @@ public final class TargetDataChannel implements IPacketHandler {
         output.writeBoolean(tag != null);
         inventory.write(output);
         TankPreview.write(output, tanks);
+        machine.write(output);
         if (bytes.size() > MAX_PACKET) {
-            if (tag != null) sendResponse(player, sequence, null, inventory, tanks);
+            if (tag != null) sendResponse(player, sequence, null, inventory, tanks, machine);
             return;
         }
         PacketDispatcher.sendPacketToPlayer(new Packet250CustomPayload(NAME, bytes.toByteArray()), (Player) player);
@@ -171,7 +180,11 @@ public final class TargetDataChannel implements IPacketHandler {
                 bridge.report("Tank preview for " + tile.getClass().getName(), e);
             }
         }
-        sendResponse(player, sequence, data, inventory, tanks);
+        MachinePreview machine = supportsMachines(player)
+                ? MachineProviders.collect(tile, Iaspis.config().getBoolean("machine.energy"),
+                        Iaspis.config().getBoolean("machine.progress"))
+                : MachinePreview.EMPTY;
+        sendResponse(player, sequence, data, inventory, tanks, machine);
     }
 
     private static NBTTagCompound entityData(EntityPlayerMP player, int id) {

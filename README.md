@@ -30,6 +30,10 @@ Press **Numpad 2** to cycle fluid targeting through Off, Sources only, and All f
 
 For blocks that expose tanks through Forge, the HUD shows the fluid name, stored amount and capacity in mB, and a fill bar. Use Content settings to turn off the bar or show tanks only while holding Sneak. Multiplayer tank previews require Iaspis on the server. Server owners can turn off tank data sharing with `tank.preview` in `config/iaspis.cfg`.
 
+## Machine data
+
+Add-ons can register machine data with `MachineProviders.register` during common mod initialization. A provider supplies stored energy and capacity in its native unit, processing progress, or both. Content settings control the fill bar, progress arrow, and whether machine data appears only while holding Sneak. Multiplayer machine previews require the provider and Iaspis on the server and client.
+
 ## WAILA integrations
 
 Iaspis implements the startup IMC and block and entity provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. Provider options are available in `config/iaspis.cfg`.

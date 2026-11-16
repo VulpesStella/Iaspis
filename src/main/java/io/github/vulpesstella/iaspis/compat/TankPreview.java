@@ -14,7 +14,7 @@ import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
 
 public final class TankPreview {
-    static final int MARKER = -1;
+    private static final int MARKER = -1;
     private static final int LIMIT = 8;
 
     public final Fluid fluid;
@@ -68,9 +68,13 @@ public final class TankPreview {
 
     static List<TankPreview> read(DataInputStream in) throws IOException {
         if (in.available() == 0) return Collections.emptyList();
-        if (in.readInt() != MARKER) throw new IOException("Invalid tank preview marker");
+        in.mark(4);
+        if (in.readInt() != MARKER) {
+            in.reset();
+            return Collections.emptyList();
+        }
         int size = in.readUnsignedByte();
-        if (size > LIMIT || in.available() != size * 12) throw new IOException("Invalid tank preview size");
+        if (size > LIMIT || in.available() < size * 12) throw new IOException("Invalid tank preview size");
         List<TankPreview> tanks = new ArrayList<TankPreview>(size);
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
