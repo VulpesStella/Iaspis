@@ -21,8 +21,22 @@ jobs:
       - name: Configure build JDKs
         run: bash ./setup.sh
       - uses: gradle/actions/setup-gradle@v6
+      - name: Fetch Forge mappings
+        run: |
+          path=net/minecraftforge/forge/1.6.4-9.11.1.1345/forge-1.6.4-9.11.1.1345-src.zip
+          archive="$RUNNER_TEMP/${path##*/}"
+          sha=8543c4bbc02ace1fc72b9a85b38c01276eef07080f86bae847c1696af5ee749f
+          for repository in https://maven.minecraftforge.net https://bmclapi2.bangbang93.com/maven; do
+            if curl -fsSL --max-time 30 -o "$archive" "$repository/$path" &&
+               printf '%s  %s\n' "$sha" "$archive" | sha256sum --check; then
+              echo "FORGE_MAPPINGS_FILE=$archive" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'Could not fetch the verified Forge mappings archive.' >&2
+          exit 1
       - name: Build mod
-        run: bash ./build.sh --no-daemon --console=plain clean build
+        run: bash ./build.sh --no-daemon --console=plain "-PforgeMappingsFile=$FORGE_MAPPINGS_FILE" clean build
       - name: Upload distributable mod
         uses: actions/upload-artifact@v6
         with:
