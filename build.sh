@@ -16,7 +16,11 @@ else
 fi
 if $needs_setup; then "$root/setup.sh"; fi
 while IFS='=' read -r key value; do
-    if [[ $key == jdk17 ]]; then export JAVA_HOME=$value; fi
+    case $key in
+        jdk7) export JDK7="$value" ;;
+        jdk8) export JDK8="$value" ;;
+        jdk17) export JAVA_HOME="$value" ;;
+    esac
 done < "$root/.jdks/homes.properties"
 [[ -x ${JAVA_HOME:-}/bin/java ]] || { echo 'Run ./setup.sh to configure JDK 17.' >&2; exit 1; }
 export PATH="$JAVA_HOME/bin:$PATH"
