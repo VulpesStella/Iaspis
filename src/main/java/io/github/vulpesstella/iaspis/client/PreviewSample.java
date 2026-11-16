@@ -41,7 +41,8 @@ enum PreviewSample {
     HEALTH_LIMIT("health.iconLimit"),
     HEALTH_COLUMNS("health.columns"),
     HEALTH_FRACTION("health.fraction", false),
-    ARMOR_LIMIT("armor.iconLimit");
+    ARMOR_LIMIT("armor.iconLimit"),
+    BREAKING("breaking.enabled");
 
     final String key;
     final boolean defaultEnabled;

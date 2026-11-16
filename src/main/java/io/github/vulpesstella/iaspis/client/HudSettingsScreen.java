@@ -42,6 +42,7 @@ final class HudSettingsScreen extends GuiScreen {
                 PreviewSample.INVENTORY_COLUMNS, PreviewSample.INVENTORY_NAMES, PreviewSample.INVENTORY_SORT,
                 PreviewSample.HARVEST, PreviewSample.HARVEST_EFFECTIVE, PreviewSample.HARVEST_CREATIVE,
                 PreviewSample.HARVEST_UNBREAKABLE, PreviewSample.HARVEST_NEW_LINE, PreviewSample.HEALTH,
+                PreviewSample.BREAKING,
                 PreviewSample.HEALTH_LIMIT, PreviewSample.HEALTH_COLUMNS, PreviewSample.HEALTH_FRACTION,
                 PreviewSample.ARMOR, PreviewSample.ARMOR_LIMIT, PreviewSample.GROWTH, PreviewSample.FURNACE);
 

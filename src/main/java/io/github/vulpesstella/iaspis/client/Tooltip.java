@@ -145,6 +145,9 @@ final class Tooltip {
             case BOSS_BAR:
                 tooltip.icon = new ItemStack(Block.obsidian);
                 break;
+            case BREAKING:
+                tooltip.icon = new ItemStack(Block.stone);
+                break;
             case BOSSES:
                 entityName = StatCollector.translateToLocal("entity.WitherBoss.name");
                 tooltip.maxHealth = 300;

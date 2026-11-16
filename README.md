@@ -20,6 +20,8 @@ The overlay fades in when you acquire a target, resizes when you switch targets,
 
 The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold your Sneak key (Left Shift by default) to expand container previews. The default limits are 9 stacks normally and 27 in detail mode. You can change both limits, set the number of items per row, sort by stack size, and show item names for small inventories.
 
+While you break a block, a thin bar at the bottom of the HUD shows your progress. It turns red if your tool cannot harvest the block. You can disable it under Content.
+
 Container previews show item icons and stack counts. In multiplayer, install Iaspis on the server for containers whose contents are unavailable to the client. The `inventory.preview` setting in `config/iaspis.cfg` controls previews on the client and whether the server shares inventory data. Use `harvest.enabled` to toggle harvest hints.
 
 ## WAILA integrations

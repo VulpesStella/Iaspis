@@ -67,6 +67,7 @@ public final class Overlay extends Gui {
             return;
         }
         Target target;
+        BlockBreakingProgress breaking = null;
         boolean animate = Iaspis.config().getBoolean("overlay.animation");
         if (game.objectMouseOver == null) {
             target = null;
@@ -80,6 +81,7 @@ public final class Overlay extends Gui {
                     String detailKey = GameSettings.getKeyDisplayString(game.gameSettings.keyBindSneak.keyCode);
                     boolean lite = NumberOption.MODE.get() == HudSettings.LITE && !details;
                     lastTooltip = new Tooltip(target, details, detailKey, lite);
+                    breaking = BlockBreakingProgress.read(game.playerController, target, event.partialTicks);
                 }
             } finally {
                 providers.close();
@@ -89,7 +91,7 @@ public final class Overlay extends Gui {
         float opacity = fade.update(System.nanoTime(), target != null, NumberOption.LINGER.get(), animate);
         if (opacity > 0) {
             renderTooltip(lastTooltip, event.resolution, 0, 0,
-                    event.resolution.getScaledWidth(), event.resolution.getScaledHeight(), null, opacity);
+                    event.resolution.getScaledWidth(), event.resolution.getScaledHeight(), null, opacity, breaking);
         } else if (target == null) {
             resetTransition();
         }
@@ -112,7 +114,9 @@ public final class Overlay extends Gui {
             drawPreviewPlayerList(x, y, width);
         }
         if (sample.visible(millis)) {
-            renderTooltip(Tooltip.preview(sample, millis), resolution, x, y, width, height, sample, 1);
+            BlockBreakingProgress progress = sample == PreviewSample.BREAKING && sample.enabled()
+                    ? BlockBreakingProgress.preview(millis) : null;
+            renderTooltip(Tooltip.preview(sample, millis), resolution, x, y, width, height, sample, 1, progress);
         }
     }
 
@@ -135,7 +139,8 @@ public final class Overlay extends Gui {
     }
 
     private void renderTooltip(Tooltip tooltip, ScaledResolution resolution, int originX, int originY,
-                               int areaWidth, int areaHeight, PreviewSample sample, float opacity) {
+                               int areaWidth, int areaHeight, PreviewSample sample, float opacity,
+                               BlockBreakingProgress breaking) {
         boolean preview = sample != null;
         float scale = NumberOption.SCALE.get() / 100.0F;
         int layoutWidth = (int) (areaWidth / scale);
@@ -203,6 +208,15 @@ public final class Overlay extends Gui {
         int height = headerHeight + harvestHeight + rows * SLOT_SIZE + 10
                 + (healthRows + extraHealthRows + armorRows) * VITAL_ROW_HEIGHT
                 + (furnaceWidth > 0 ? SLOT_SIZE : 0);
+        if (sample == PreviewSample.ANCHOR_Y) {
+            scale = Math.min(scale, areaHeight / (2.0F * (height + 8)));
+            layoutWidth = (int) (areaWidth / scale);
+            layoutHeight = (int) (areaHeight / scale);
+        } else if (sample == PreviewSample.ANCHOR_X) {
+            scale = Math.min(scale, areaWidth / (2.0F * width));
+            layoutWidth = (int) (areaWidth / scale);
+            layoutHeight = (int) (areaHeight / scale);
+        }
         float heightLimit = areaHeight * (preview && sample != PreviewSample.AUTO_SCALE
                 ? 1 : NumberOption.AUTO_SCALE.get() / 100.0F);
         if ((height + 8) * scale > heightLimit && areaHeight > 0) {
@@ -211,8 +225,11 @@ public final class Overlay extends Gui {
             layoutWidth = (int) (areaWidth / scale);
             layoutHeight = (int) (areaHeight / scale);
         }
-        int expectedLeft = anchoredPosition(layoutWidth, width, NumberOption.X.get(), NumberOption.ANCHOR_X.get());
-        int expectedTop = 8 + anchoredPosition(layoutHeight - 8, height, NumberOption.Y.get(), NumberOption.ANCHOR_Y.get());
+        // Demonstrate each anchor away from the clamped screen edges.
+        int xPercent = sample == PreviewSample.ANCHOR_X ? 50 : NumberOption.X.get();
+        int yPercent = sample == PreviewSample.ANCHOR_Y ? 50 : NumberOption.Y.get();
+        int expectedLeft = anchoredPosition(layoutWidth, width, xPercent, NumberOption.ANCHOR_X.get());
+        int expectedTop = 8 + anchoredPosition(layoutHeight - 8, height, yPercent, NumberOption.ANCHOR_Y.get());
         boolean bossVisible = preview ? sample == PreviewSample.BOSS_BAR : BossStatus.statusBarLength > 0;
         int bossHalfWidth = preview ? Math.min(91, Math.max(1, (areaWidth - 12) / 2)) : 91;
         if (bossVisible
@@ -238,6 +255,13 @@ public final class Overlay extends Gui {
         RenderScope hud = new RenderScope();
         try {
             RenderScope.hud();
+            if (sample == PreviewSample.ANCHOR_Y) {
+                int guideY = originY + Math.round((8 + (layoutHeight - 8) / 2) * scale);
+                drawRect(originX, guideY, originX + areaWidth, guideY + 1, 0x7fbcade8);
+            } else if (sample == PreviewSample.ANCHOR_X) {
+                int guideX = originX + Math.round(layoutWidth / 2 * scale);
+                drawRect(guideX, originY, guideX + 1, originY + areaHeight, 0x7fbcade8);
+            }
             RenderScope.clip(clipLeft * pixelScale, game.displayHeight - clipBottom * pixelScale,
                     Math.max(0, clipRight - clipLeft) * pixelScale,
                     Math.max(0, clipBottom - clipTop) * pixelScale, scissor);
@@ -282,6 +306,7 @@ public final class Overlay extends Gui {
                     detailTop += SLOT_SIZE;
                 }
                 if (columns > 0) drawInventory(tooltip.inventory, columns, left + 6, detailTop, scale != 1);
+                if (breaking != null) drawBreakingProgress(breaking, bounds);
             } finally {
                 GL11.glPopMatrix();
             }
@@ -289,6 +314,14 @@ public final class Overlay extends Gui {
         } finally {
             hud.close();
         }
+    }
+
+    private void drawBreakingProgress(BlockBreakingProgress breaking, OverlayTransition.Bounds bounds) {
+        int fill = Math.round(bounds.width * breaking.fraction);
+        if (fill == 0) return;
+        int bottom = bounds.top + bounds.height;
+        int color = breaking.canHarvest ? 0xffc3b4f1 : 0xffef6464;
+        drawRect(bounds.left, bottom - 2, bounds.left + fill, bottom, color);
     }
 
     private static int anchoredPosition(int area, int size, int percent, int anchor) {
