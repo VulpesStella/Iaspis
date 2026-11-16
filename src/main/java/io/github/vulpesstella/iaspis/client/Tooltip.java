@@ -1,25 +1,29 @@
 package io.github.vulpesstella.iaspis.client;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
+import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import io.github.vulpesstella.iaspis.compat.WailaBridge.Section;
+import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
 import mcp.mobius.waila.api.IWailaBlock;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaEntityProvider;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.StatCollector;
 
@@ -38,37 +42,174 @@ final class Tooltip {
     int armor;
 
     Tooltip(Target target, boolean details, String detailKey) {
-        if (target.getBlock() != null) buildBlock(target);
-        else if (target.getEntity() != null) buildEntity(target);
+        this(target, details, detailKey, false);
+    }
 
+    Tooltip(Target target, boolean details, String detailKey, boolean lite) {
+        if (target.getBlock() != null) buildBlock(target, lite);
+        else if (target.getEntity() != null) buildEntity(target, lite);
+
+        if (lite) return;
         InventoryPreview preview = target.getInventoryPreview();
-        if (target.getTileEntity() instanceof TileEntityFurnace) {
-            furnaceSlots = preview.furnaceSlots;
-            if (!furnaceSlots.isEmpty() && cookTime < 0) cookTime = 0;
-            if (!furnaceSlots.isEmpty()) return;
+        if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
+            int progress = target.getNBTInteger(target.getNBTData(), "CookTime");
+            if (applyFurnaceProgress(preview.furnaceSlots, progress)) return;
         }
-        int limit = details ? InventoryPreview.DETAIL_LIMIT : InventoryPreview.COMPACT_LIMIT;
-        inventory = preview.stacks.subList(0, Math.min(limit, preview.stacks.size()));
-        if (!details && (preview.stacks.size() > limit || preview.truncated)) {
+        applyInventory(preview.stacks, preview.truncated, details, detailKey);
+    }
+
+    private void applyInventory(List<ItemStack> stacks, boolean truncated, boolean details, String detailKey) {
+        int limit = (details ? NumberOption.INVENTORY_DETAILS : NumberOption.INVENTORY_LIMIT).get();
+        if (!stacks.isEmpty() && PreviewSample.INVENTORY_SORT.enabled()) {
+            stacks = new ArrayList<ItemStack>(stacks);
+            Collections.sort(stacks, new Comparator<ItemStack>() {
+                @Override
+                public int compare(ItemStack a, ItemStack b) {
+                    return Integer.compare(b.stackSize, a.stackSize);
+                }
+            });
+        }
+        inventory = stacks.subList(0, Math.min(limit, stacks.size()));
+        if (!details && NumberOption.INVENTORY_DETAILS.get() > limit && (stacks.size() > limit || truncated)) {
             lines.add("\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey));
-        } else if (details && preview.truncated) {
+        } else if (truncated || stacks.size() > limit) {
             lines.add("\u00a77" + StatCollector.translateToLocal("iaspis.inventory.truncated"));
+        }
+        int names = NumberOption.INVENTORY_NAMES.get();
+        if (!inventory.isEmpty() && stacks.size() <= names && !truncated) {
+            for (ItemStack stack : inventory) lines.add(stack.getDisplayName());
         }
     }
 
-    private void buildBlock(Target target) {
+    private Tooltip() {}
+
+    static Tooltip preview(PreviewSample sample, long millis) {
+        Tooltip tooltip = new Tooltip();
+        String entityName = null;
+        String detail = null;
+        List<ItemStack> exampleInventory = Collections.emptyList();
+        boolean showMoreItems = false;
+        switch (sample) {
+            case HEALTH:
+            case HEALTH_FRACTION:
+            case ENTITIES:
+                entityName = StatCollector.translateToLocal("entity.Slime.name");
+                if (PreviewSample.HEALTH.enabled() || sample != PreviewSample.HEALTH) {
+                    tooltip.maxHealth = 4;
+                    tooltip.health = millis % 2400 < 1600 ? 4 : 3;
+                }
+                break;
+            case HEALTH_LIMIT:
+            case HEALTH_COLUMNS:
+                entityName = StatCollector.translateToLocal("entity.PigZombie.name");
+                tooltip.maxHealth = 36;
+                tooltip.health = 29;
+                break;
+            case ARMOR:
+            case ARMOR_LIMIT:
+                entityName = StatCollector.translateToLocal("entity.Zombie.name");
+                if (PreviewSample.ARMOR.enabled() || sample == PreviewSample.ARMOR_LIMIT) tooltip.armor = 18;
+                break;
+            case HARVEST:
+            case HARVEST_CREATIVE:
+            case HARVEST_NEW_LINE:
+                tooltip.icon = new ItemStack(Block.oreDiamond);
+                if (sample == PreviewSample.HARVEST_NEW_LINE || sample.enabled()) {
+                    tooltip.harvest = HarvestHint.preview(Block.oreDiamond, millis % 2400 >= 1200);
+                }
+                break;
+            case HARVEST_EFFECTIVE:
+                tooltip.icon = new ItemStack(Block.wood);
+                if (sample.enabled()) tooltip.harvest = HarvestHint.preview(Block.wood, true);
+                break;
+            case HARVEST_UNBREAKABLE:
+                tooltip.icon = new ItemStack(Block.bedrock);
+                if (sample.enabled()) detail = StatCollector.translateToLocal("iaspis.harvest.unbreakable");
+                break;
+            case GROWTH:
+                tooltip.icon = new ItemStack(Item.wheat);
+                if (Iaspis.config().getBoolean(sample.key)) detail = cropProgress(millis % 2400 < 1500 ? 4 : 7, 7);
+                break;
+            case FURNACE:
+                tooltip.icon = new ItemStack(Block.furnaceIdle);
+                List<ItemStack> items = Iaspis.config().getBoolean("inventory.preview")
+                        ? Arrays.asList(new ItemStack(Block.oreIron, 8), new ItemStack(Item.coal, 5),
+                                new ItemStack(Item.ingotIron, 2))
+                        : Collections.<ItemStack>emptyList();
+                boolean showProgress = Iaspis.config().getBoolean(sample.key);
+                int progress = 1 + (int) (millis % 2200) * 199 / 2200;
+                if (!showProgress || !tooltip.applyFurnaceProgress(items, progress)) {
+                    exampleInventory = items;
+                }
+                break;
+            case BOSS_BAR:
+                tooltip.icon = new ItemStack(Block.obsidian);
+                break;
+            case BOSSES:
+                entityName = StatCollector.translateToLocal("entity.WitherBoss.name");
+                tooltip.maxHealth = 300;
+                tooltip.health = 226;
+                break;
+            case AUTO_SCALE:
+            case INVENTORY_LIMIT:
+            case INVENTORY_DETAILS:
+            case INVENTORY_COLUMNS:
+            case INVENTORY_SORT:
+                tooltip.icon = new ItemStack(Block.chest);
+                showMoreItems = sample == PreviewSample.INVENTORY_DETAILS || sample == PreviewSample.INVENTORY_COLUMNS
+                        || sample == PreviewSample.AUTO_SCALE;
+                exampleInventory = exampleInventory();
+                break;
+            default:
+                boolean alternate = sample == PreviewSample.ANIMATION && millis % 2300 >= 1150;
+                tooltip.icon = new ItemStack(alternate ? Block.stone : Block.chest);
+                boolean compact = sample == PreviewSample.MODE && HudSettings.NumberOption.MODE.get() == HudSettings.LITE
+                        && millis % 2400 < 1400;
+                if (!alternate && !compact && (sample != PreviewSample.INVENTORY || Iaspis.config().getBoolean(sample.key))) {
+                    exampleInventory = Arrays.asList(new ItemStack(Item.appleRed, 3),
+                            new ItemStack(Block.planks, 12), new ItemStack(Item.ingotIron, 2));
+                }
+                break;
+        }
+        tooltip.lines.add(entityName == null ? tooltip.icon.getDisplayName() : entityName);
+        if (detail != null) tooltip.lines.add(detail);
+        if (PreviewSample.MOD_NAME.enabled()) tooltip.lines.add("\u00a79\u00a7oMinecraft");
+        if (!exampleInventory.isEmpty()) {
+            tooltip.applyInventory(exampleInventory, false, showMoreItems, "Shift");
+        }
+        return tooltip;
+    }
+
+    private static List<ItemStack> exampleInventory() {
+        List<ItemStack> items = new ArrayList<ItemStack>(InventoryPreview.DETAIL_LIMIT);
+        for (int variant = 0; variant < InventoryPreview.DETAIL_LIMIT; variant++) {
+            Block block = variant < 16 ? Block.cloth : Block.stainedClay;
+            items.add(new ItemStack(block, 1 + (variant * 7) % 64, variant % 16));
+        }
+        return items;
+    }
+
+    private boolean applyFurnaceProgress(List<ItemStack> slots, int progress) {
+        furnaceSlots = slots;
+        if (progress > 0 || !slots.isEmpty()) cookTime = Math.max(0, Math.min(200, progress));
+        return !slots.isEmpty();
+    }
+
+    private void buildBlock(Target target, boolean lite) {
         Block block = target.getBlock();
         IWailaBlock direct = block instanceof IWailaBlock ? (IWailaBlock) block : null;
         icon = pickStack(target, direct);
         List<String> head = section(icon == null ? block.getLocalizedName() : icon.getDisplayName());
         List<String> body = new ArrayList<String>();
-        addBlockDetails(target, body);
-        if (BRIDGE.getConfig("harvest.enabled")) harvest = HarvestHint.create(target, body);
+        if (!lite) {
+            addBlockDetails(target, body);
+            if (Iaspis.config().getBoolean("harvest.enabled")) harvest = HarvestHint.create(target, body);
+        }
         GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(block);
         List<String> tail = source(id == null ? null : Loader.instance().getIndexedModList().get(id.modId),
                 block.getClass());
         lines.addAll(blockSection(Section.HEAD, target, direct, head));
-        lines.addAll(blockSection(Section.BODY, target, direct, body));
+        if (!lite) lines.addAll(blockSection(Section.BODY, target, direct, body));
         lines.addAll(blockSection(Section.TAIL, target, direct, tail));
     }
 
@@ -135,19 +276,17 @@ final class Tooltip {
         int stages = 0;
         if (block == Block.crops || block == Block.carrot || block == Block.potato) stages = 7;
         else if (block == Block.netherStalk) stages = 3;
-        if (stages > 0) {
-            int growth = target.getMetadata();
-            lines.add(growth >= stages ? "\u00a7a" + StatCollector.translateToLocal("iaspis.growth.mature")
-                    : StatCollector.translateToLocalFormatted("iaspis.growth", Math.round(growth * 100.0F / stages)));
-        }
-        if (target.getTileEntity() instanceof TileEntityFurnace) {
-            NBTTagCompound data = target.getNBTData();
-            int progress = target.getNBTInteger(data, "CookTime");
-            if (progress > 0) cookTime = Math.min(200, progress);
+        if (stages > 0 && Iaspis.config().getBoolean("growth.enabled")) {
+            lines.add(cropProgress(target.getMetadata(), stages));
         }
     }
 
-    private void buildEntity(Target target) {
+    private static String cropProgress(int age, int stages) {
+        return age >= stages ? "\u00a7a" + StatCollector.translateToLocal("iaspis.growth.mature")
+                : StatCollector.translateToLocalFormatted("iaspis.growth", Math.round(age * 100.0F / stages));
+    }
+
+    private void buildEntity(Target target, boolean lite) {
         Entity entity = target.getEntity();
         for (IWailaEntityProvider provider : BRIDGE.entities(Section.OVERRIDE, target)) {
             try {
@@ -163,16 +302,18 @@ final class Tooltip {
             }
         }
         List<String> body = new ArrayList<String>();
-        if (entity instanceof EntityLivingBase) {
+        if (!lite && entity instanceof EntityLivingBase) {
             EntityLivingBase living = (EntityLivingBase) entity;
-            health = living.getHealth();
-            maxHealth = living.getMaxHealth();
-            absorption = living.getAbsorptionAmount();
-            armor = living.getTotalArmorValue();
+            if (Iaspis.config().getBoolean("health.enabled")) {
+                health = living.getHealth();
+                maxHealth = living.getMaxHealth();
+                absorption = living.getAbsorptionAmount();
+            }
+            if (Iaspis.config().getBoolean("armor.enabled")) armor = living.getTotalArmorValue();
         }
         EntityRegistry.EntityRegistration registration = EntityRegistry.instance().lookupModSpawn(entity.getClass(), true);
         lines.addAll(entitySection(Section.HEAD, target, entity, section(entity.getTranslatedEntityName())));
-        lines.addAll(entitySection(Section.BODY, target, entity, body));
+        if (!lite) lines.addAll(entitySection(Section.BODY, target, entity, body));
         lines.addAll(entitySection(Section.TAIL, target, entity,
                 source(registration == null ? null : registration.getContainer(), entity.getClass())));
     }
@@ -198,6 +339,7 @@ final class Tooltip {
     }
 
     private static List<String> source(ModContainer mod, Class<?> type) {
+        if (!PreviewSample.MOD_NAME.enabled()) return new ArrayList<String>();
         if (mod != null) return section("\u00a79\u00a7o" + mod.getName());
         if (type.getName().startsWith("net.minecraft.")) return section("\u00a79\u00a7oMinecraft");
         return new ArrayList<String>();

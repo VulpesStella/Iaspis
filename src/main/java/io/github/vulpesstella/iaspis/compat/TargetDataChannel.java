@@ -141,7 +141,7 @@ public final class TargetDataChannel implements IPacketHandler {
             data = select(full, keys);
         }
         InventoryPreview inventory = InventoryPreview.EMPTY;
-        if (tile instanceof IInventory && bridge.getConfig("inventory.preview")) {
+        if (tile instanceof IInventory && Iaspis.config().getBoolean("inventory.preview")) {
             try {
                 inventory = InventoryPreview.collect(player, block, tile);
             } catch (RuntimeException e) {

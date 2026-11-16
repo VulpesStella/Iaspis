@@ -1,5 +1,6 @@
 package io.github.vulpesstella.iaspis.client;
 
+import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
@@ -36,7 +37,7 @@ final class RemoteTargetData {
         boolean fresh = sameTarget && now - dataTime < EXPIRE;
         if (fresh && data != null) target.setRemoteData(data);
         WailaBridge bridge = WailaBridge.INSTANCE;
-        boolean preview = target.getTileEntity() instanceof IInventory && bridge.getConfig("inventory.preview");
+        boolean preview = target.getTileEntity() instanceof IInventory && Iaspis.config().getBoolean("inventory.preview");
         target.setInventoryPreview(fresh && preview ? inventory : InventoryPreview.EMPTY);
         if (!request || now - nextRequest < 0 || (!preview && bridge.syncedKeys(target.getBlockID(),
                 entity == null ? target.getBlock() : entity, target.getTileEntity()).isEmpty())) return;

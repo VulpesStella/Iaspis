@@ -8,15 +8,17 @@ Entity health uses full, half, and empty hearts. Armor uses armor icons. Large v
 
 1. Install Minecraft Forge 9.11.1.1345 for Minecraft 1.6.4.
 2. Remove WAILA from the instance and place the Iaspis release JAR in `mods/`.
-3. Press **Numpad 1** in game to toggle the overlay. Change the binding in Controls.
+3. Press **Numpad 0** in game to open Iaspis settings and **Numpad 1** to control the overlay. Change either binding in Controls.
 
 Forge lists **Iaspis** (`iaspis`) and **Iaspis WAILA Compatibility** (`Waila`). Both entries come from the same JAR. Install Iaspis on the server as well to enable server-side target data.
 
-The overlay smoothly resizes when the target changes. Use `overlay.animation` in `config/iaspis.cfg` to turn off the transition.
+The settings screen groups options under Style, Behavior and Content. Hover over an option to see an example in the live preview. The option list scrolls independently. Toggle mode keeps the overlay on until you switch it off. Hold mode shows it while you hold the overlay key. Lite mode shows the target name and source, with full details while you hold Sneak.
+
+The overlay fades in when you acquire a target, resizes when you switch targets, and briefly lingers before fading out. You can adjust the linger time, choose which targets appear, and set how the HUD behaves around the boss bar or player list. Appearance options include target icon layout, mod name, position anchors, and auto-scaling for tall tooltips.
 
 ## Harvesting and inventory
 
-The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold your Sneak key (Left Shift by default) to expand container previews from 9 to 27 item stacks.
+The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold your Sneak key (Left Shift by default) to expand container previews. The default limits are 9 stacks normally and 27 in detail mode. You can change both limits, set the number of items per row, sort by stack size, and show item names for small inventories.
 
 Container previews show item icons and stack counts. In multiplayer, install Iaspis on the server for containers whose contents are unavailable to the client. The `inventory.preview` setting in `config/iaspis.cfg` controls previews on the client and whether the server shares inventory data. Use `harvest.enabled` to toggle harvest hints.
 

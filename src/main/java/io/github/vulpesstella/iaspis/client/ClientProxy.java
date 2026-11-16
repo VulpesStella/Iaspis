@@ -4,9 +4,9 @@ import java.util.EnumSet;
 
 import cpw.mods.fml.client.registry.KeyBindingRegistry;
 import cpw.mods.fml.common.TickType;
+import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
-import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.nbt.NBTTagCompound;
@@ -18,14 +18,22 @@ public final class ClientProxy extends CommonProxy {
 
     @Override
     public void init() {
-        MinecraftForge.EVENT_BUS.register(new Overlay(remote));
+        HudSettings.load();
+        KeyBinding settings = new KeyBinding("key.iaspis.settings", Keyboard.KEY_NUMPAD0);
         KeyBinding toggle = new KeyBinding("key.iaspis.toggle", Keyboard.KEY_NUMPAD1);
+        final Overlay overlay = new Overlay(remote, toggle);
+        MinecraftForge.EVENT_BUS.register(overlay);
+        final KeyBinding settingsKey = settings;
         KeyBindingRegistry.registerKeyBinding(new KeyBindingRegistry.KeyHandler(
-                new KeyBinding[] { toggle }, new boolean[] { false }) {
+                new KeyBinding[] { settings, toggle }, new boolean[] { false, false }) {
             @Override
             public void keyDown(EnumSet<TickType> types, KeyBinding key, boolean end, boolean repeat) {
-                if (end && Minecraft.getMinecraft().currentScreen == null) {
-                    WailaBridge.INSTANCE.toggleOverlay();
+                Minecraft game = Minecraft.getMinecraft();
+                if (!end || game.currentScreen != null) return;
+                if (key == settingsKey) game.displayGuiScreen(new HudSettingsScreen(overlay));
+                else if (HudSettings.NumberOption.MODE.get() != HudSettings.HOLD) {
+                    Iaspis.config().setBoolean("overlay.enabled", !Iaspis.config().getBoolean("overlay.enabled"));
+                    Iaspis.config().save();
                 }
             }
 

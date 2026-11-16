@@ -1,5 +1,6 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import io.github.vulpesstella.iaspis.Iaspis;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaEntityAccessor;
 import net.minecraft.block.Block;
@@ -77,7 +78,7 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor {
 
     public InventoryPreview getInventoryPreview() {
         if (inventory != null) return inventory;
-        if (WailaBridge.INSTANCE.getConfig("inventory.preview")) {
+        if (Iaspis.config().getBoolean("inventory.preview")) {
             try {
                 return InventoryPreview.collect(player, block, tile);
             } catch (RuntimeException e) {

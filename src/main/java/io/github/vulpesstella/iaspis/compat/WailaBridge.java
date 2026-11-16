@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage;
+import io.github.vulpesstella.iaspis.Iaspis;
 import mcp.mobius.waila.api.IWailaBlockDecorator;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataProvider;
@@ -22,7 +23,6 @@ import mcp.mobius.waila.api.IWailaFMPDecorator;
 import mcp.mobius.waila.api.IWailaFMPProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 import mcp.mobius.waila.api.IWailaSummaryProvider;
-import net.minecraftforge.common.Configuration;
 
 @SuppressWarnings("rawtypes") // The WAILA 1.5.2a registrar uses raw Class parameters.
 public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
@@ -35,21 +35,14 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     private final List<Registration<IWailaBlockDecorator>> decorators = new ArrayList<Registration<IWailaBlockDecorator>>();
     private final List<Registration<String>> syncedKeys = new ArrayList<Registration<String>>();
     private final Map<String, HashMap<String, String>> modules = new LinkedHashMap<String, HashMap<String, String>>();
-    private final Map<String, Boolean> options = new HashMap<String, Boolean>();
     private final Set<String> reported = new HashSet<String>();
-    private Configuration config;
     private Logger log;
 
     private WailaBridge() {
     }
 
-    public void configure(Configuration configuration, Logger logger) {
-        config = configuration;
+    public void initialize(Logger logger) {
         log = logger;
-        getConfig("overlay.enabled");
-        getConfig("overlay.animation");
-        getConfig("inventory.preview");
-        getConfig("harvest.enabled");
     }
 
     public void receive(List<IMCMessage> messages) {
@@ -106,19 +99,7 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     public boolean getConfig(String key) { return getConfig(key, true); }
 
     public boolean getConfig(String key, boolean defaultValue) {
-        Boolean cached = options.get(key);
-        if (cached != null) return cached;
-        boolean value = config.get("display", key, defaultValue).getBoolean(defaultValue);
-        options.put(key, value);
-        if (config.hasChanged()) config.save();
-        return value;
-    }
-
-    public void toggleOverlay() {
-        boolean enabled = !getConfig("overlay.enabled");
-        config.get("display", "overlay.enabled", true).set(enabled);
-        options.put("overlay.enabled", enabled);
-        config.save();
+        return Iaspis.config().getBoolean(key, defaultValue);
     }
 
     public List<IWailaDataProvider> blocks(Section section, Target target) {

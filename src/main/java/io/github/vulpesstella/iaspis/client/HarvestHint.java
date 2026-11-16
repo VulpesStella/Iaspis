@@ -29,17 +29,26 @@ final class HarvestHint {
         this.showStatus = showStatus;
     }
 
+    static HarvestHint preview(Block block, boolean harvestable) {
+        boolean requiresTool = !block.blockMaterial.isToolNotRequired();
+        return new HarvestHint(findTools(block, 0, 3, requiresTool), harvestable, requiresTool || !harvestable);
+    }
+
     static HarvestHint create(Target target, List<String> lines) {
         Block block = target.getBlock();
-        if (target.getPlayer() == null) return null;
+        if (target.getPlayer() == null || (target.getPlayer().capabilities.isCreativeMode
+                && !PreviewSample.HARVEST_CREATIVE.enabled())) return null;
         MovingObjectPosition hit = target.getPosition();
         float hardness = block.getBlockHardness(target.getWorld(), hit.blockX, hit.blockY, hit.blockZ);
         if (hardness < 0) {
-            lines.add(StatCollector.translateToLocal("iaspis.harvest.unbreakable"));
+            if (PreviewSample.HARVEST_UNBREAKABLE.enabled()) {
+                lines.add(StatCollector.translateToLocal("iaspis.harvest.unbreakable"));
+            }
             return null;
         }
 
         boolean requiresTool = !block.blockMaterial.isToolNotRequired();
+        if (!requiresTool && !PreviewSample.HARVEST_EFFECTIVE.enabled()) return null;
         List<ToolIcon> icons = findTools(block, target.getMetadata(), hardness, requiresTool);
         if (icons.isEmpty()) return null;
         boolean harvestable = block.canHarvestBlock(target.getPlayer(), target.getMetadata());

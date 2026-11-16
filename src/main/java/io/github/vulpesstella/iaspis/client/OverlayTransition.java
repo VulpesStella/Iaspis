@@ -32,6 +32,7 @@ final class OverlayTransition {
         float progress = elapsed / (float) DURATION_NANOS;
         return new Bounds(
                 interpolate(from.left, to.left, progress),
+                interpolate(from.top, to.top, progress),
                 interpolate(from.width, to.width, progress),
                 interpolate(from.height, to.height, progress));
     }
@@ -42,17 +43,19 @@ final class OverlayTransition {
 
     static final class Bounds {
         final int left;
+        final int top;
         final int width;
         final int height;
 
-        Bounds(int left, int width, int height) {
+        Bounds(int left, int top, int width, int height) {
             this.left = left;
+            this.top = top;
             this.width = width;
             this.height = height;
         }
 
         boolean sameSizeAndPosition(Bounds other) {
-            return left == other.left && width == other.width && height == other.height;
+            return left == other.left && top == other.top && width == other.width && height == other.height;
         }
     }
 }
