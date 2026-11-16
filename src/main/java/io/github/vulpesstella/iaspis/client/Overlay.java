@@ -22,6 +22,7 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.boss.BossStatus;
 import net.minecraft.entity.boss.IBossDisplayData;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.EnumMovingObjectType;
@@ -56,6 +57,8 @@ public final class Overlay extends Gui {
     private final RenderItem itemRenderer = new RenderItem();
     private final RemoteTargetData remote;
     private final KeyBinding showKey;
+    private final KeyBinding detailsKey;
+    private final TargetNarrator narrator = new TargetNarrator();
     private final OverlayTransition transition = new OverlayTransition();
     private final OverlayTransition previewTransition = new OverlayTransition();
     private final OverlayFade fade = new OverlayFade();
@@ -64,9 +67,10 @@ public final class Overlay extends Gui {
     private Tooltip lastTooltip;
     private PreviewSample lastPreview;
 
-    Overlay(RemoteTargetData remote, KeyBinding showKey) {
+    Overlay(RemoteTargetData remote, KeyBinding showKey, KeyBinding detailsKey) {
         this.remote = remote;
         this.showKey = showKey;
+        this.detailsKey = detailsKey;
     }
 
     @ForgeSubscribe
@@ -89,18 +93,18 @@ public final class Overlay extends Gui {
             // Legacy providers and modded pick-block hooks run before the HUD draws.
             RenderScope providers = new RenderScope();
             try {
-                target = target(event.partialTicks, true);
+                target = target(event.partialTicks, true, true);
                 if (target != null) {
-                    boolean details = GameSettings.isKeyDown(game.gameSettings.keyBindSneak);
-                    String detailKey = GameSettings.getKeyDisplayString(game.gameSettings.keyBindSneak.keyCode);
+                    boolean details = detailsKey.keyCode != 0 && GameSettings.isKeyDown(detailsKey);
                     boolean lite = NumberOption.MODE.get() == HudSettings.LITE && !details;
-                    lastTooltip = new Tooltip(target, details, detailKey, lite);
+                    lastTooltip = new Tooltip(target, details, detailsKeyName(), lite);
                     breaking = BlockBreakingProgress.read(game.playerController, target, event.partialTicks);
                 }
             } finally {
                 providers.close();
             }
         }
+        updateNarration(target);
         if (lastTooltip == null) return;
         float opacity = fade.update(System.nanoTime(), target != null, NumberOption.LINGER.get(), animate);
         if (opacity > 0) {
@@ -112,9 +116,22 @@ public final class Overlay extends Gui {
     }
 
     private void resetTransition() {
+        narrator.update(null);
         transition.reset();
         fade.reset();
         lastTooltip = null;
+    }
+
+    private void updateNarration(Target target) {
+        if (!PreviewSample.NARRATION.enabled()) {
+            narrator.update(null);
+            return;
+        }
+        narrator.update(target == null || lastTooltip == null || lastTooltip.lines.isEmpty()
+                ? null : lastTooltip.lines.get(0));
+        if (narrator.takeWarning()) {
+            game.thePlayer.addChatMessage(StatCollector.translateToLocal("iaspis.narration.unavailable"));
+        }
     }
 
     void renderPreview(ScaledResolution resolution, int x, int y, int width, int height,
@@ -130,7 +147,7 @@ public final class Overlay extends Gui {
         if (sample.visible(millis)) {
             BlockBreakingProgress progress = sample == PreviewSample.BREAKING && sample.enabled()
                     ? BlockBreakingProgress.preview(millis) : null;
-            renderTooltip(Tooltip.preview(sample, millis), resolution, x, y, width, height, sample, 1, progress);
+            renderTooltip(Tooltip.preview(sample, millis, detailsKeyName()), resolution, x, y, width, height, sample, 1, progress);
         }
     }
 
@@ -626,7 +643,7 @@ public final class Overlay extends Gui {
         Target target;
         RenderScope pick = new RenderScope();
         try {
-            target = target(event.partialTicks, false);
+            target = target(event.partialTicks, false, false);
         } finally {
             pick.close();
         }
@@ -647,11 +664,11 @@ public final class Overlay extends Gui {
         }
     }
 
-    private Target target(float partialTicks, boolean request) {
+    private Target target(float partialTicks, boolean request, boolean hudAim) {
         MovingObjectPosition hit = game.objectMouseOver;
         if (!available()) return null;
         int fluidMode = NumberOption.FLUID_TARGET.get();
-        if (request && fluidMode != FluidTarget.OFF && (hit == null || hit.entityHit == null)
+        if (hudAim && fluidMode != FluidTarget.OFF && (hit == null || hit.entityHit == null)
                 && PreviewSample.BLOCKS.enabled()) {
             Vec3 eyes = game.renderViewEntity.getPosition(partialTicks);
             Vec3 look = game.renderViewEntity.getLook(partialTicks);
@@ -660,7 +677,7 @@ public final class Overlay extends Gui {
             MovingObjectPosition fluidHit = FluidTarget.trace(game.theWorld, eyes, look, reach, fluidMode);
             if (fluidHit != null) hit = fluidHit;
         }
-        if (request && showsDroppedItems() && (hit == null || hit.entityHit == null)) {
+        if (hudAim && showsDroppedItems() && (hit == null || hit.entityHit == null)) {
             MovingObjectPosition itemHit = droppedItemTarget(partialTicks, hit);
             if (itemHit != null) hit = itemHit;
         }
@@ -683,6 +700,23 @@ public final class Overlay extends Gui {
         Target target = new Target(game.theWorld, game.thePlayer, game.renderViewEntity, hit, partialTicks, stack);
         remote.apply(target, request);
         return target;
+    }
+
+    ItemStack lookupStack() {
+        RenderScope scope = new RenderScope();
+        try {
+            Target target = target(1, false, true);
+            if (target == null) return null;
+            if (target.getEntity() instanceof EntityItem) return ((EntityItem) target.getEntity()).getEntityItem();
+            if (target.getEntity() instanceof EntityItemFrame) return ((EntityItemFrame) target.getEntity()).getDisplayedItem();
+            return target.getBlock() == null ? null : new Tooltip(target, false, null, true).icon;
+        } finally {
+            scope.close();
+        }
+    }
+
+    private String detailsKeyName() {
+        return detailsKey.keyCode == 0 ? null : GameSettings.getKeyDisplayString(detailsKey.keyCode);
     }
 
     private boolean showsDroppedItems() {

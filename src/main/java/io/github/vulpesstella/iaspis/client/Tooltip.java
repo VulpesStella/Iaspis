@@ -12,6 +12,7 @@ import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
@@ -66,7 +67,8 @@ final class Tooltip {
 
         if (lite) return;
         List<TankPreview> tankPreview = target.getTankPreview();
-        if (!PreviewSample.TANK_DETAILS.enabled() || details) tanks = tankPreview;
+        DisplayMode tankDisplay = Iaspis.config().getTankDisplay();
+        if (tankDisplay.shows(details)) tanks = tankPreview;
         MachinePreview machine = target.getMachinePreview();
         if (machine.unit != null) energy = machine;
         processing = machine.progress;
@@ -77,7 +79,7 @@ final class Tooltip {
             showInventory = !applyFurnaceProgress(preview.furnaceSlots, progress);
         }
         if (showInventory) applyInventory(preview.stacks, preview.truncated, details, detailKey);
-        if (tanks.isEmpty() && !tankPreview.isEmpty()) {
+        if (detailKey != null && tankDisplay == DisplayMode.DETAILS && !details && !tankPreview.isEmpty()) {
             String hint = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
             if (!lines.contains(hint)) lines.add(hint);
         }
@@ -95,7 +97,7 @@ final class Tooltip {
             });
         }
         inventory = stacks.subList(0, Math.min(limit, stacks.size()));
-        if (!details && NumberOption.INVENTORY_DETAILS.get() > limit && (stacks.size() > limit || truncated)) {
+        if (detailKey != null && !details && NumberOption.INVENTORY_DETAILS.get() > limit && (stacks.size() > limit || truncated)) {
             lines.add("\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey));
         } else if (truncated || stacks.size() > limit) {
             lines.add("\u00a77" + StatCollector.translateToLocal("iaspis.inventory.truncated"));
@@ -108,7 +110,7 @@ final class Tooltip {
 
     private Tooltip() {}
 
-    static Tooltip preview(PreviewSample sample, long millis) {
+    static Tooltip preview(PreviewSample sample, long millis, String detailKey) {
         Tooltip tooltip = new Tooltip();
         String entityName = null;
         String detail = null;
@@ -174,17 +176,16 @@ final class Tooltip {
                         ? "iaspis.fluid.source" : "iaspis.fluid.flowing");
                 break;
             case TANK:
-            case TANK_DETAILS:
             case TANK_BAR:
                 tooltip.icon = new ItemStack(Item.cauldron);
                 entityName = StatCollector.translateToLocal("iaspis.tank.example");
-                if (PreviewSample.TANK.enabled()) {
-                    if (PreviewSample.TANK_DETAILS.enabled() && millis % 3200 < 1600) {
-                        detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", "Shift");
-                    } else {
-                        tooltip.tanks = Arrays.asList(new TankPreview(FluidRegistry.WATER, 6000, 8000),
-                                new TankPreview(null, 0, 4000));
-                    }
+                DisplayMode tankSample = Iaspis.config().getTankDisplay();
+                boolean showTankDetails = millis % 3200 >= 1600;
+                if (tankSample.shows(showTankDetails)) {
+                    tooltip.tanks = Arrays.asList(new TankPreview(FluidRegistry.WATER, 6000, 8000),
+                            new TankPreview(null, 0, 4000));
+                } else if (tankSample == DisplayMode.DETAILS && detailKey != null) {
+                    detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
                 }
                 break;
             case BREWING:
@@ -258,6 +259,12 @@ final class Tooltip {
                     entityDetails.add(VanillaEntityDetails.timed("iaspis.entity.despawn", 3500 - millis % 3400 / 50));
                 }
                 break;
+            case NARRATION:
+                tooltip.icon = new ItemStack(Block.chest);
+                if (sample.enabled()) {
+                    detail = StatCollector.translateToLocalFormatted("iaspis.narration.example", tooltip.icon.getDisplayName());
+                }
+                break;
             case BOSS_BAR:
                 tooltip.icon = new ItemStack(Block.obsidian);
                 break;
@@ -295,7 +302,7 @@ final class Tooltip {
         tooltip.lines.addAll(entityDetails);
         if (PreviewSample.MOD_NAME.enabled()) tooltip.lines.add("\u00a79\u00a7oMinecraft");
         if (!exampleInventory.isEmpty()) {
-            tooltip.applyInventory(exampleInventory, false, showMoreItems, "Shift");
+            tooltip.applyInventory(exampleInventory, false, showMoreItems, detailKey);
         }
         return tooltip;
     }

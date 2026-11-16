@@ -1,6 +1,8 @@
 package io.github.vulpesstella.iaspis.client;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 
 final class HudSettings {
 
@@ -25,7 +27,8 @@ final class HudSettings {
         HEALTH_COLUMNS("health.columns", 10, 1, 20, ""),
         ARMOR_LIMIT("armor.iconLimit", 20, 0, 200, ""),
         FLUID_TARGET("fluid.target", FluidTarget.OFF, FluidTarget.ALL),
-        EFFECT_LIMIT("vanilla.effectLimit", 5, 0, 12, "");
+        EFFECT_LIMIT("vanilla.effectLimit", 5, 0, 12, ""),
+        TANK_DISPLAY(IaspisConfig.TANK_DISPLAY, DisplayMode.ON.ordinal(), DisplayMode.DETAILS.ordinal());
 
         final String key;
         final int fallback;

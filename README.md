@@ -8,17 +8,17 @@ Entity health uses full, half, and empty hearts. Armor uses armor icons. Large v
 
 1. Install Minecraft Forge 9.11.1.1345 for Minecraft 1.6.4.
 2. Remove WAILA from the instance and place the Iaspis release JAR in `mods/`.
-3. Press **Numpad 0** in game to open Iaspis settings and **Numpad 1** to control the overlay. Change these bindings in Controls.
+3. Press **Numpad +** in game to open Iaspis settings and **Numpad 1** to control the overlay. Change these bindings in Controls.
 
 Forge lists **Iaspis** (`iaspis`) and **Iaspis WAILA Compatibility** (`Waila`). Both entries come from the same JAR. Install Iaspis on the server as well to enable server-side target data.
 
-The settings screen groups options under Style, Behavior and Content. Hover over an option to see an example in the live preview. The option list scrolls independently. Toggle mode keeps the overlay on until you switch it off. Hold mode shows it while you hold the overlay key. Lite mode shows the target name and source, with full details while you hold Sneak.
+The settings screen groups options under Style, Behavior and Content. Hover over an option to see an example in the live preview. The option list scrolls independently. Toggle mode keeps the overlay on until you switch it off. Hold mode shows it while you hold the overlay key. Lite mode shows the target name and source. Hold **Numpad 3** for full details, or change the Iaspis details binding in Controls.
 
 The overlay fades in when you acquire a target, resizes when you switch targets, and briefly lingers before fading out. You can adjust the linger time, choose which targets appear, and set how the HUD behaves around the boss bar or player list. Appearance options include target icon layout, mod name, position anchors, and auto-scaling for tall tooltips.
 
 ## Harvesting and inventory
 
-The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold your Sneak key (Left Shift by default) to expand container previews. The default limits are 9 stacks normally and 27 in detail mode. You can change both limits, set the number of items per row, sort by stack size, and show item names for small inventories.
+The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold the Iaspis details key to expand container previews. The default limits are 9 stacks normally and 27 in detail mode. You can change both limits, set the number of items per row, sort by stack size, and show item names for small inventories.
 
 While you break a block, a thin bar at the bottom of the HUD shows your progress. It turns red if your tool cannot harvest the block. You can disable it under Content.
 
@@ -28,7 +28,13 @@ Container previews show item icons and stack counts. In multiplayer, install Ias
 
 Press **Numpad 2** to cycle fluid targeting through Off, Sources only, and All fluids. You can change the mode under Behavior and rebind the key in Controls.
 
-For blocks that expose tanks through Forge, the HUD shows the fluid name, stored amount and capacity in mB, and a fill bar. Use Content settings to turn off the bar or show tanks only while holding Sneak. Multiplayer tank previews require Iaspis on the server. Server owners can turn off tank data sharing with `tank.preview` in `config/iaspis.cfg`.
+For blocks that expose tanks through Forge, the HUD shows the fluid name, stored amount and capacity in mB, and a fill bar. In Content settings, set **Tank contents** to Off, On, or Only in detailed view. The last mode shows tanks while you hold the details key. Multiplayer tank previews require Iaspis on the server. Server owners can set `I:tank.display=0` in `config/iaspis.cfg` to turn off tank data sharing.
+
+## Lookup and narration
+
+With [NotEnoughItems for 1.6.4](https://www.curseforge.com/minecraft/mc-mods/notenoughitems/files/2207574), aim at a block, dropped item, or item in a frame and press **Numpad 4** for recipes or **Numpad 5** for uses. Both bindings are available in Controls.
+
+Enable **Narrate target names** under Behavior to read the selected target aloud. Narration uses the system speech voice on Windows or macOS and `espeak-ng` or `espeak` on Linux. Available languages depend on installed voices.
 
 ## Machine data
 

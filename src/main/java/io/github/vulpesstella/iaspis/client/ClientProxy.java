@@ -23,14 +23,18 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void init() {
         HudSettings.load();
-        KeyBinding settings = new KeyBinding("key.iaspis.settings", Keyboard.KEY_NUMPAD0);
-        KeyBinding toggle = new KeyBinding("key.iaspis.toggle", Keyboard.KEY_NUMPAD1);
+        KeyBinding settings = new KeyBinding("key.iaspis.settings", Keyboard.KEY_ADD);
+        final KeyBinding toggle = new KeyBinding("key.iaspis.toggle", Keyboard.KEY_NUMPAD1);
         final KeyBinding fluidKey = new KeyBinding("key.iaspis.fluid", Keyboard.KEY_NUMPAD2);
-        final Overlay overlay = new Overlay(remote, toggle);
+        final KeyBinding details = new KeyBinding("key.iaspis.details", Keyboard.KEY_NUMPAD3);
+        final KeyBinding recipe = new KeyBinding("key.iaspis.recipe", Keyboard.KEY_NUMPAD4);
+        final KeyBinding uses = new KeyBinding("key.iaspis.uses", Keyboard.KEY_NUMPAD5);
+        final Overlay overlay = new Overlay(remote, toggle, details);
         MinecraftForge.EVENT_BUS.register(overlay);
         final KeyBinding settingsKey = settings;
         KeyBindingRegistry.registerKeyBinding(new KeyBindingRegistry.KeyHandler(
-                new KeyBinding[] { settings, toggle, fluidKey }, new boolean[] { false, false, false }) {
+                new KeyBinding[] { settings, toggle, fluidKey, details, recipe, uses },
+                new boolean[] { false, false, false, false, false, false }) {
             @Override
             public void keyDown(EnumSet<TickType> types, KeyBinding key, boolean end, boolean repeat) {
                 Minecraft game = Minecraft.getMinecraft();
@@ -45,7 +49,9 @@ public final class ClientProxy extends CommonProxy {
                                 "iaspis.fluid.changed", StatCollector.translateToLocal(
                                         "iaspis.settings.fluid.target." + mode.get())));
                     }
-                } else if (HudSettings.NumberOption.MODE.get() != HudSettings.HOLD) {
+                } else if (key == recipe || key == uses) {
+                    NeiLookup.open(game, overlay, key == uses);
+                } else if (key == toggle && HudSettings.NumberOption.MODE.get() != HudSettings.HOLD) {
                     Iaspis.config().setBoolean("overlay.enabled", !Iaspis.config().getBoolean("overlay.enabled"));
                     Iaspis.config().save();
                 }

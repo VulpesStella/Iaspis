@@ -15,6 +15,7 @@ import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockHopper;
 import net.minecraft.entity.Entity;
@@ -179,7 +180,7 @@ public final class TargetDataChannel implements IPacketHandler {
             }
         }
         List<TankPreview> tanks = Collections.emptyList();
-        if (tile instanceof IFluidHandler && Iaspis.config().getBoolean("tank.preview")
+        if (tile instanceof IFluidHandler && Iaspis.config().getTankDisplay() != DisplayMode.OFF
                 && supportsTanks(player)) {
             try {
                 tanks = TankPreview.collect((IFluidHandler) tile);

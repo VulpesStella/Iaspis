@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.EntityHudData;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.MachinePreview;
@@ -51,7 +52,7 @@ final class RemoteTargetData {
         WailaBridge bridge = WailaBridge.INSTANCE;
         boolean preview = target.getTileEntity() instanceof IInventory && Iaspis.config().getBoolean("inventory.preview");
         target.setInventoryPreview(fresh && preview ? inventory : InventoryPreview.EMPTY);
-        boolean tank = target.getTileEntity() instanceof IFluidHandler && PreviewSample.TANK.enabled()
+        boolean tank = target.getTileEntity() instanceof IFluidHandler && Iaspis.config().getTankDisplay() != DisplayMode.OFF
                 && TargetDataChannel.supportsTanks(target.getPlayer());
         if (fresh && tank) target.setTankPreview(tanks);
         boolean machinePreview = TargetDataChannel.supportsMachines(target.getPlayer())

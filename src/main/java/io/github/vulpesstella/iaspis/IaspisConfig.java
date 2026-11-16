@@ -7,6 +7,15 @@ import java.util.Map;
 import net.minecraftforge.common.Configuration;
 
 public final class IaspisConfig {
+    public enum DisplayMode {
+        OFF, ON, DETAILS;
+
+        public boolean shows(boolean details) {
+            return this == ON || (this == DETAILS && details);
+        }
+    }
+
+    public static final String TANK_DISPLAY = "tank.display";
     private static final String DISPLAY = "display";
     private final Configuration file;
     private final Map<String, Boolean> booleans = new HashMap<String, Boolean>();
@@ -48,6 +57,10 @@ public final class IaspisConfig {
 
     public synchronized void setInt(String key, int value) {
         file.get(DISPLAY, key, value).set(value);
+    }
+
+    public DisplayMode getTankDisplay() {
+        return DisplayMode.values()[getInt(TANK_DISPLAY, DisplayMode.ON.ordinal(), 0, DisplayMode.DETAILS.ordinal())];
     }
 
     public synchronized void save() {

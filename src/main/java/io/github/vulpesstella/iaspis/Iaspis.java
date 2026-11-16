@@ -31,7 +31,7 @@ public final class Iaspis {
         config.getBoolean("overlay.enabled");
         config.getBoolean("overlay.animation");
         config.getBoolean("inventory.preview");
-        config.getBoolean("tank.preview");
+        config.getTankDisplay();
         config.getBoolean("harvest.enabled");
         WailaBridge.INSTANCE.initialize(event.getModLog());
         WailaBridge.INSTANCE.registerSyncedNBTKey("CookTime", TileEntityFurnace.class);

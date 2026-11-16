@@ -1,6 +1,7 @@
 package io.github.vulpesstella.iaspis.client;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig;
 
 enum PreviewSample {
     DEFAULT(""),
@@ -44,8 +45,7 @@ enum PreviewSample {
     ARMOR_LIMIT("armor.iconLimit"),
 BREAKING("breaking.enabled"),
     FLUID_TARGET("fluid.target"),
-    TANK("tank.preview"),
-    TANK_DETAILS("tank.details", false),
+    TANK(IaspisConfig.TANK_DISPLAY),
     TANK_BAR("tank.bar"),
     BREWING("vanilla.brewing"),
     SPAWNER("vanilla.spawner"),
@@ -60,7 +60,8 @@ BREAKING("breaking.enabled"),
     EFFECTS("vanilla.effects"),
     EFFECT_LIMIT("vanilla.effectLimit"),
     ITEM_FRAME("vanilla.itemFrame"),
-    DROPPED_ITEM("vanilla.dropped");
+    DROPPED_ITEM("vanilla.dropped"),
+    NARRATION("overlay.narration", false);
 
     final String key;
     final boolean defaultEnabled;
