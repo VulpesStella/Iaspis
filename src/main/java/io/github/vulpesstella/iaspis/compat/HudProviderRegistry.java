@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.api.HudComponent;
 import io.github.vulpesstella.iaspis.api.HudProviders;
 import io.github.vulpesstella.iaspis.api.HudTarget;
@@ -37,11 +38,16 @@ public final class HudProviderRegistry {
         return new LinkedHashMap<String, String>(SETTINGS);
     }
 
+    public static DisplayMode mode(String id) {
+        DisplayMode forced = Iaspis.proxy.forcedHudProviderMode(id);
+        return forced == null ? Iaspis.config().getHudProviderMode(id) : forced;
+    }
+
     public static Changes collect(HudTarget target, boolean detailed) {
         Changes result = new Changes();
         for (Registration registration : registrations) {
             if (!registration.matches(target)) continue;
-            if (registration.id != null && !Iaspis.config().getHudProviderMode(registration.id).shows(detailed)) continue;
+            if (registration.id != null && !mode(registration.id).shows(detailed)) continue;
             Changes changes = new Changes();
             try {
                 registration.provider.update(target, detailed, changes);

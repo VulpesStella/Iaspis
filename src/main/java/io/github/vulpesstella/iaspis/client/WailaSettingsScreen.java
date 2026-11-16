@@ -71,7 +71,7 @@ final class WailaSettingsScreen extends GuiScreen {
                 }
                 boolean locked = locked(row);
                 String value = row.nativeProvider
-                        ? translate("iaspis.extensions.mode." + Iaspis.config().getHudProviderMode(row.key).ordinal())
+                        ? translate("iaspis.extensions.mode." + HudProviderRegistry.mode(row.key).ordinal())
                         : translate(BRIDGE.getConfig(row.key) ? "options.on" : "options.off");
                 if (locked) value = StatCollector.translateToLocalFormatted("iaspis.waila.locked", value);
                 int valueX = x + 210 - fontRenderer.getStringWidth(value);
@@ -83,8 +83,8 @@ final class WailaSettingsScreen extends GuiScreen {
     }
 
     private static boolean locked(OptionRow row) {
-        return !row.nativeProvider && (BRIDGE.forcedOption(row.key) != null
-                || (BRIDGE.requiresServer(row.key) && !Iaspis.proxy.hasWailaServer()));
+        if (row.nativeProvider) return Iaspis.proxy.forcedHudProviderMode(row.key) != null;
+        return BRIDGE.forcedOption(row.key) != null || (BRIDGE.requiresServer(row.key) && !Iaspis.proxy.hasWailaServer());
     }
 
     @Override

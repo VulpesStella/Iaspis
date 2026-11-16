@@ -6,6 +6,7 @@ import java.util.Map;
 
 import cpw.mods.fml.common.ITickHandler;
 import cpw.mods.fml.common.TickType;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.WailaOptionsChannel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.INetworkManager;
@@ -15,6 +16,7 @@ final class RemoteWailaOptions implements ITickHandler {
     private final Minecraft game = Minecraft.getMinecraft();
     private INetworkManager connection;
     private Map<String, Boolean> options;
+    private Map<String, DisplayMode> providerModes = Collections.emptyMap();
     private long nextRequest;
 
     synchronized Boolean forced(String key) {
@@ -30,12 +32,27 @@ final class RemoteWailaOptions implements ITickHandler {
         }
     }
 
+    synchronized DisplayMode forcedHudProviderMode(String id) {
+        INetworkManager current = currentConnection();
+        if (current == null || !WailaOptionsChannel.available(game.thePlayer)) return null;
+        // The server sends any provider locks before its legacy options response.
+        if (connection != current || options == null) return DisplayMode.OFF;
+        return providerModes.get(id);
+    }
+
+    synchronized void receiveHudProviderModes(INetworkManager manager, Map<String, DisplayMode> values) {
+        if (currentConnection() == manager && manager == connection) {
+            providerModes = Collections.unmodifiableMap(values);
+        }
+    }
+
     @Override
     public synchronized void tickEnd(EnumSet<TickType> types, Object... data) {
         INetworkManager current = currentConnection();
         if (current != connection) {
             connection = current;
             options = null;
+            providerModes = Collections.emptyMap();
             nextRequest = 0;
         }
         if (connection == null || options != null || !WailaOptionsChannel.available(game.thePlayer)) return;

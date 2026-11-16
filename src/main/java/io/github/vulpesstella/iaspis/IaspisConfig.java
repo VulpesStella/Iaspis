@@ -2,9 +2,11 @@ package io.github.vulpesstella.iaspis;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraftforge.common.Configuration;
+import net.minecraftforge.common.Property;
 
 public final class IaspisConfig {
     public enum DisplayMode {
@@ -18,6 +20,7 @@ public final class IaspisConfig {
     public static final String TANK_DISPLAY = "tank.display";
     private static final String DISPLAY = "display";
     private static final String HUD_PROVIDERS = "hud_providers";
+    private static final String HUD_PROVIDERS_SERVER = "hud_providers_server";
     private final Configuration file;
     private final Map<String, Boolean> booleans = new HashMap<String, Boolean>();
 
@@ -74,6 +77,17 @@ public final class IaspisConfig {
     public synchronized void setHudProviderMode(String id, DisplayMode mode) {
         file.get(HUD_PROVIDERS, id, DisplayMode.ON.ordinal()).set(mode.ordinal());
         save();
+    }
+
+    public synchronized Map<String, DisplayMode> lockedHudProviderModes() {
+        Map<String, DisplayMode> modes = new LinkedHashMap<String, DisplayMode>();
+        if (!file.hasCategory(HUD_PROVIDERS_SERVER)) return modes;
+        DisplayMode[] displayModes = DisplayMode.values();
+        for (Map.Entry<String, Property> entry : file.getCategory(HUD_PROVIDERS_SERVER).getValues().entrySet()) {
+            int value = entry.getValue().getInt(-1);
+            if (value >= 0 && value < displayModes.length) modes.put(entry.getKey(), displayModes[value]);
+        }
+        return modes;
     }
 
     public synchronized boolean isWailaOptionLocked(String key) {

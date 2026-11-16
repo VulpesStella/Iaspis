@@ -74,6 +74,16 @@ Import `HudProviders` and `HudTarget` from `io.github.vulpesstella.iaspis.api`. 
 
 Give the provider a stable namespaced ID and a translation key to list it under **Extensions**. Players can choose **Off**, **On**, or **Only in detailed view**. The selection applies to all registrations sharing that ID and is stored in the client's `hud_providers` configuration category. Use the overload without an ID for providers that have no separate setting.
 
+Server owners can lock a provider's mode in the server's `config/iaspis.cfg`. Add its quoted ID under `hud_providers_server` and use `0` for Off, `1` for On, or `2` for Only in detailed view. For example:
+
+```text
+hud_providers_server {
+    I:"example:machine_status"=2
+}
+```
+
+Restart the server to apply edits. The **Extensions** screen shows locked modes as server-controlled. The client keeps its local choice and uses it again after leaving the server.
+
 Use `tooltip.addComponent(component)` to add a visual row. Implement `HudComponent` in the same package and report its width and height in GUI pixels. Draw inside that rectangle from the supplied top-left coordinates. Iaspis lays out component rows in provider order above the inventory grid. Components appear in full and detailed tooltips.
 
 ## Building

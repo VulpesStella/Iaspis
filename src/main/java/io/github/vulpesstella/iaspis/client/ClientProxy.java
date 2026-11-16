@@ -9,6 +9,7 @@ import cpw.mods.fml.common.TickType;
 import cpw.mods.fml.common.registry.TickRegistry;
 import cpw.mods.fml.relauncher.Side;
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.MachinePreview;
@@ -90,6 +91,16 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void receiveWailaOptions(INetworkManager manager, Map<String, Boolean> options) {
         if (remoteOptions != null) remoteOptions.receive(manager, options);
+    }
+
+    @Override
+    public DisplayMode forcedHudProviderMode(String id) {
+        return remoteOptions == null ? null : remoteOptions.forcedHudProviderMode(id);
+    }
+
+    @Override
+    public void receiveHudProviderModes(INetworkManager manager, Map<String, DisplayMode> modes) {
+        if (remoteOptions != null) remoteOptions.receiveHudProviderModes(manager, modes);
     }
 
     @Override
