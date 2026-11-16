@@ -17,6 +17,8 @@ public final class IaspisConfig {
         if (file.hasCategory(DISPLAY)) {
             file.getCategory(DISPLAY).remove("machine.energy");
             file.getCategory(DISPLAY).remove("machine.energyBar");
+            file.getCategory(DISPLAY).remove("machine.progress");
+            file.getCategory(DISPLAY).remove("machine.details");
             save();
         }
     }

@@ -23,8 +23,9 @@ final class HudSettings {
         INVENTORY_NAMES("inventory.names", 0, 0, 9, ""),
         HEALTH_LIMIT("health.iconLimit", 40, 0, 200, ""),
         HEALTH_COLUMNS("health.columns", 10, 1, 20, ""),
-ARMOR_LIMIT("armor.iconLimit", 20, 0, 200, ""),
-        FLUID_TARGET("fluid.target", FluidTarget.OFF, FluidTarget.ALL);
+        ARMOR_LIMIT("armor.iconLimit", 20, 0, 200, ""),
+        FLUID_TARGET("fluid.target", FluidTarget.OFF, FluidTarget.ALL),
+        EFFECT_LIMIT("vanilla.effectLimit", 5, 0, 12, "");
 
         final String key;
         final int fallback;

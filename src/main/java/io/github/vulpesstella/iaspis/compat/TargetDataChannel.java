@@ -190,7 +190,7 @@ public final class TargetDataChannel implements IPacketHandler {
             }
         }
         MachinePreview machine = supportsMachines(player)
-                ? MachineProviders.collect(tile, Iaspis.config().getBoolean("machine.progress"))
+                ? MachineProviders.collect(tile)
                 : MachinePreview.EMPTY;
         sendResponse(player, sequence, data, inventory, tanks, machine);
     }
@@ -200,10 +200,14 @@ public final class TargetDataChannel implements IPacketHandler {
         if (entity == null || entity instanceof EntityPlayer || player.getDistanceSqToEntity(entity) > 64
                 || !player.canEntityBeSeen(entity)) return null;
         List<String> keys = WailaBridge.INSTANCE.syncedKeys(-1, entity, null);
-        if (keys.isEmpty()) return null;
+        if (keys.isEmpty() && !EntityHudData.needsSync(entity)) return null;
         NBTTagCompound data = new NBTTagCompound();
-        entity.writeToNBT(data);
-        return select(data, keys);
+        if (!keys.isEmpty()) {
+            entity.writeToNBT(data);
+            data = select(data, keys);
+        }
+        EntityHudData.append(entity, data);
+        return data;
     }
 
     private static NBTTagCompound select(NBTTagCompound source, List<String> keys) {

@@ -46,8 +46,10 @@ final class HudSettingsScreen extends GuiScreen {
                 PreviewSample.HEALTH_LIMIT, PreviewSample.HEALTH_COLUMNS, PreviewSample.HEALTH_FRACTION,
                 PreviewSample.ARMOR, PreviewSample.ARMOR_LIMIT, PreviewSample.GROWTH, PreviewSample.FURNACE,
                 PreviewSample.TANK, PreviewSample.TANK_DETAILS, PreviewSample.TANK_BAR,
-                PreviewSample.PROCESSING, PreviewSample.PROCESSING_DETAILS, PreviewSample.BREWING, PreviewSample.SPAWNER,
-                PreviewSample.HOPPER, PreviewSample.NOTE_BLOCK, PreviewSample.JUKEBOX, PreviewSample.ENCHANTING);
+                PreviewSample.BREWING, PreviewSample.SPAWNER,
+                PreviewSample.HOPPER, PreviewSample.NOTE_BLOCK, PreviewSample.JUKEBOX, PreviewSample.ENCHANTING,
+                PreviewSample.ANIMAL, PreviewSample.HORSE, PreviewSample.OWNER, PreviewSample.VILLAGER,
+                PreviewSample.EFFECTS, PreviewSample.EFFECT_LIMIT, PreviewSample.ITEM_FRAME, PreviewSample.DROPPED_ITEM);
 
         final String key;
         final PreviewSample[] options;

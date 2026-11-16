@@ -27,6 +27,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.Fluid;
@@ -44,6 +46,7 @@ final class Tooltip {
     float brewProgress = -1;
     ItemStack detailItem;
     String detailLabel;
+    List<VanillaEntityDetails.EffectLine> effects = Collections.emptyList();
     HarvestHint harvest;
     List<ItemStack> inventory = Collections.emptyList();
     List<ItemStack> furnaceSlots = Collections.emptyList();
@@ -65,10 +68,8 @@ final class Tooltip {
         List<TankPreview> tankPreview = target.getTankPreview();
         if (!PreviewSample.TANK_DETAILS.enabled() || details) tanks = tankPreview;
         MachinePreview machine = target.getMachinePreview();
-        boolean showProcessing = !PreviewSample.PROCESSING_DETAILS.enabled() || details;
-        boolean processingAvailable = machine.progress > 0 && PreviewSample.PROCESSING.enabled();
         if (machine.unit != null) energy = machine;
-        if (showProcessing && processingAvailable) processing = machine.progress;
+        processing = machine.progress;
         InventoryPreview preview = target.getInventoryPreview();
         boolean showInventory = true;
         if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
@@ -76,7 +77,7 @@ final class Tooltip {
             showInventory = !applyFurnaceProgress(preview.furnaceSlots, progress);
         }
         if (showInventory) applyInventory(preview.stacks, preview.truncated, details, detailKey);
-        if ((tanks.isEmpty() && !tankPreview.isEmpty()) || (!showProcessing && processingAvailable)) {
+        if (tanks.isEmpty() && !tankPreview.isEmpty()) {
             String hint = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
             if (!lines.contains(hint)) lines.add(hint);
         }
@@ -112,6 +113,7 @@ final class Tooltip {
         String entityName = null;
         String detail = null;
         List<ItemStack> exampleInventory = Collections.emptyList();
+        List<String> entityDetails = new ArrayList<String>();
         boolean showMoreItems = false;
         switch (sample) {
             case HEALTH:
@@ -185,18 +187,6 @@ final class Tooltip {
                     }
                 }
                 break;
-            case PROCESSING:
-            case PROCESSING_DETAILS:
-                tooltip.icon = new ItemStack(Block.furnaceIdle);
-                entityName = StatCollector.translateToLocal("iaspis.machine.example");
-                if (PreviewSample.PROCESSING.enabled()) {
-                    if (PreviewSample.PROCESSING_DETAILS.enabled() && millis % 3200 < 1600) {
-                        detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", "Shift");
-                    } else {
-                        tooltip.processing = 0.25F + (millis % 2200) / 4400.0F;
-                    }
-                }
-                break;
             case BREWING:
                 tooltip.icon = new ItemStack(Item.brewingStand);
                 if (sample.enabled()) tooltip.brewProgress = 0.2F + (millis % 2200) / 3000.0F;
@@ -224,6 +214,49 @@ final class Tooltip {
             case ENCHANTING:
                 tooltip.icon = new ItemStack(Block.enchantmentTable);
                 if (sample.enabled()) detail = VanillaBlockDetails.enchanting(millis % 2800 < 1400 ? 8 : 15);
+                break;
+            case ANIMAL:
+                entityName = StatCollector.translateToLocal("entity.Cow.name");
+                if (sample.enabled()) detail = VanillaEntityDetails.timed(millis % 3400 < 1700
+                        ? "iaspis.entity.growth" : "iaspis.entity.cooldown", 1800 - millis % 1700 / 50);
+                break;
+            case HORSE:
+                entityName = StatCollector.translateToLocal("entity.EntityHorse.name");
+                if (sample.enabled()) VanillaEntityDetails.appendHorse(entityDetails, .225, .7);
+                break;
+            case OWNER:
+                entityName = StatCollector.translateToLocal("entity.Wolf.name");
+                if (sample.enabled()) VanillaEntityDetails.appendOwner(entityDetails, "Alex");
+                break;
+            case VILLAGER:
+                entityName = StatCollector.translateToLocal("entity.Villager.name");
+                if (sample.enabled()) detail = VanillaEntityDetails.profession(1);
+                break;
+            case EFFECTS:
+            case EFFECT_LIMIT:
+                entityName = StatCollector.translateToLocal("entity.Witch.name");
+                if (PreviewSample.EFFECTS.enabled()) {
+                    tooltip.effects = VanillaEntityDetails.effectLines(Arrays.asList(new PotionEffect(Potion.moveSpeed.id, 800, 1),
+                            new PotionEffect(Potion.damageBoost.id, 950), new PotionEffect(Potion.regeneration.id, 360),
+                            new PotionEffect(Potion.fireResistance.id, 1800), new PotionEffect(Potion.waterBreathing.id, 620),
+                            new PotionEffect(Potion.invisibility.id, 2400), new PotionEffect(Potion.nightVision.id, 900),
+                            new PotionEffect(Potion.jump.id, 340), new PotionEffect(Potion.resistance.id, 650),
+                            new PotionEffect(Potion.digSpeed.id, 400), new PotionEffect(Potion.wither.id, 200),
+                            new PotionEffect(Potion.weakness.id, 580)));
+                }
+                break;
+            case ITEM_FRAME:
+                tooltip.icon = new ItemStack(Item.itemFrame);
+                if (sample.enabled()) VanillaEntityDetails.setDisplayedItem(tooltip, new ItemStack(Item.appleRed));
+                break;
+            case DROPPED_ITEM:
+                entityName = StatCollector.translateToLocal("entity.Item.name");
+                if (sample.enabled()) {
+                    tooltip.icon = new ItemStack(Item.diamond, 4);
+                    entityName = tooltip.icon.getDisplayName();
+                    entityDetails.add(StatCollector.translateToLocalFormatted("iaspis.entity.count", 4));
+                    entityDetails.add(VanillaEntityDetails.timed("iaspis.entity.despawn", 3500 - millis % 3400 / 50));
+                }
                 break;
             case BOSS_BAR:
                 tooltip.icon = new ItemStack(Block.obsidian);
@@ -259,6 +292,7 @@ final class Tooltip {
         }
         tooltip.lines.add(entityName == null ? tooltip.icon.getDisplayName() : entityName);
         if (detail != null) tooltip.lines.add(detail);
+        tooltip.lines.addAll(entityDetails);
         if (PreviewSample.MOD_NAME.enabled()) tooltip.lines.add("\u00a79\u00a7oMinecraft");
         if (!exampleInventory.isEmpty()) {
             tooltip.applyInventory(exampleInventory, false, showMoreItems, "Shift");
@@ -419,7 +453,9 @@ final class Tooltip {
             if (Iaspis.config().getBoolean("armor.enabled")) armor = living.getTotalArmorValue();
         }
         EntityRegistry.EntityRegistration registration = EntityRegistry.instance().lookupModSpawn(entity.getClass(), true);
-        lines.addAll(entitySection(Section.HEAD, target, entity, section(entity.getTranslatedEntityName())));
+        if (!lite) VanillaEntityDetails.append(target, entity, this, body);
+        String name = VanillaEntityDetails.name(entity, icon);
+        lines.addAll(entitySection(Section.HEAD, target, entity, section(name)));
         if (!lite) lines.addAll(entitySection(Section.BODY, target, entity, body));
         lines.addAll(entitySection(Section.TAIL, target, entity,
                 source(registration == null ? null : registration.getContainer(), entity.getClass())));

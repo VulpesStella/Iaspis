@@ -21,7 +21,9 @@ import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.boss.BossStatus;
 import net.minecraft.entity.boss.IBossDisplayData;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.EnumMovingObjectType;
 import net.minecraft.util.Icon;
 import net.minecraft.util.Vec3;
@@ -44,6 +46,8 @@ public final class Overlay extends Gui {
     private static final int SLOT_SIZE = 18;
     private static final int ICON_STEP = 9;
     private static final int VITAL_ROW_HEIGHT = 11;
+    private static final int EFFECT_ROW_HEIGHT = 20;
+    private static final ResourceLocation EFFECT_TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");
     private static final int METER_HEIGHT = 13;
     private static final int PROGRESS_ARROW_WIDTH = 24;
     private static final ResourceLocation ASCII_FONT = new ResourceLocation("textures/font/ascii.png");
@@ -79,7 +83,7 @@ public final class Overlay extends Gui {
         Target target;
         BlockBreakingProgress breaking = null;
         boolean animate = Iaspis.config().getBoolean("overlay.animation");
-        if (game.objectMouseOver == null && NumberOption.FLUID_TARGET.get() == FluidTarget.OFF) {
+        if (game.objectMouseOver == null && NumberOption.FLUID_TARGET.get() == FluidTarget.OFF && !showsDroppedItems()) {
             target = null;
         } else {
             // Legacy providers and modded pick-block hooks run before the HUD draws.
@@ -231,14 +235,19 @@ public final class Overlay extends Gui {
         int progressWidth = progressLabel == null ? 0 : PROGRESS_ARROW_WIDTH + 5 + game.fontRenderer.getStringWidth(progressLabel);
         int itemDetailWidth = tooltip.detailItem == null ? 0 : SLOT_SIZE + 2 + game.fontRenderer.getStringWidth(tooltip.detailLabel);
         int machineWidth = Math.max(Math.max(energyWidth, progressWidth), itemDetailWidth);
+        int effectsWidth = 0;
+        for (VanillaEntityDetails.EffectLine effect : tooltip.effects) {
+            effectsWidth = Math.max(effectsWidth, SLOT_SIZE + 4 + game.fontRenderer.getStringWidth(effect.label));
+        }
         int width = Math.max(Math.max(headerWidth, columns * SLOT_SIZE),
                 Math.max(Math.max(harvestWidth, furnaceWidth),
-                        Math.max(Math.max(healthWidth, armorWidth), Math.max(tankWidth, machineWidth)))) + 12;
+                        Math.max(Math.max(healthWidth, armorWidth),
+                                Math.max(Math.max(tankWidth, machineWidth), effectsWidth)))) + 12;
         int height = headerHeight + harvestHeight + rows * SLOT_SIZE + 10
                 + (healthRows + extraHealthRows + armorRows) * VITAL_ROW_HEIGHT
                 + (furnaceWidth > 0 ? SLOT_SIZE : 0) + tankLabels.size() * tankHeight
                 + (energyLabel == null ? 0 : meterRowHeight(true)) + (progressLabel == null ? 0 : SLOT_SIZE)
-                + (itemDetailWidth == 0 ? 0 : SLOT_SIZE);
+                + (itemDetailWidth == 0 ? 0 : SLOT_SIZE) + tooltip.effects.size() * EFFECT_ROW_HEIGHT;
         if (sample == PreviewSample.ANCHOR_Y) {
             scale = Math.min(scale, areaHeight / (2.0F * (height + 8)));
             layoutWidth = (int) (areaWidth / scale);
@@ -364,6 +373,15 @@ public final class Overlay extends Gui {
                     game.fontRenderer.drawStringWithShadow(tooltip.detailLabel,
                             left + 8 + SLOT_SIZE, detailTop + 5, 0xffffff);
                     detailTop += SLOT_SIZE;
+                }
+                for (VanillaEntityDetails.EffectLine effect : tooltip.effects) {
+                    if (effect.icon >= 0) {
+                        bindTexture(EFFECT_TEXTURE);
+                        drawTexturedModalRect(left + 6, detailTop + 1,
+                                effect.icon % 8 * 18, 198 + effect.icon / 8 * 18, 18, 18);
+                    }
+                    game.fontRenderer.drawStringWithShadow(effect.label, left + 10 + SLOT_SIZE, detailTop + 6, 0xffffff);
+                    detailTop += EFFECT_ROW_HEIGHT;
                 }
                 if (columns > 0) drawInventory(tooltip.inventory, columns, left + 6, detailTop, scale != 1);
                 if (breaking != null) drawBreakingProgress(breaking, bounds);
@@ -642,6 +660,10 @@ public final class Overlay extends Gui {
             MovingObjectPosition fluidHit = FluidTarget.trace(game.theWorld, eyes, look, reach, fluidMode);
             if (fluidHit != null) hit = fluidHit;
         }
+        if (request && showsDroppedItems() && (hit == null || hit.entityHit == null)) {
+            MovingObjectPosition itemHit = droppedItemTarget(partialTicks, hit);
+            if (itemHit != null) hit = itemHit;
+        }
         if (hit == null) return null;
         if (hit.entityHit != null) {
             if (!(hit.entityHit instanceof IBossDisplayData ? PreviewSample.BOSSES : PreviewSample.ENTITIES).enabled()) return null;
@@ -661,6 +683,36 @@ public final class Overlay extends Gui {
         Target target = new Target(game.theWorld, game.thePlayer, game.renderViewEntity, hit, partialTicks, stack);
         remote.apply(target, request);
         return target;
+    }
+
+    private boolean showsDroppedItems() {
+        return PreviewSample.ENTITIES.enabled() && PreviewSample.DROPPED_ITEM.enabled();
+    }
+
+    private MovingObjectPosition droppedItemTarget(float partialTicks, MovingObjectPosition blockHit) {
+        Vec3 start = game.renderViewEntity.getPosition(partialTicks);
+        Vec3 look = game.renderViewEntity.getLook(partialTicks);
+        double reach = game.playerController.extendedReach() ? 6 : 3;
+        if (blockHit != null && blockHit.hitVec != null) reach = Math.min(reach, start.distanceTo(blockHit.hitVec));
+        if (reach <= 0) return null;
+        double dx = look.xCoord * reach;
+        double dy = look.yCoord * reach;
+        double dz = look.zCoord * reach;
+        Vec3 end = start.addVector(dx, dy, dz);
+        AxisAlignedBB search = game.renderViewEntity.boundingBox.addCoord(dx, dy, dz).expand(1, 1, 1);
+        EntityItem nearest = null;
+        for (Object entry : game.theWorld.getEntitiesWithinAABB(EntityItem.class, search)) {
+            EntityItem item = (EntityItem) entry;
+            if (item.isDead) continue;
+            MovingObjectPosition hit = item.boundingBox.calculateIntercept(start, end);
+            double distance = item.boundingBox.isVecInside(start) ? 0
+                    : hit == null ? Double.POSITIVE_INFINITY : start.distanceTo(hit.hitVec);
+            if (distance < reach) {
+                reach = distance;
+                nearest = item;
+            }
+        }
+        return nearest == null ? null : new MovingObjectPosition(nearest);
     }
 
     private boolean available() {

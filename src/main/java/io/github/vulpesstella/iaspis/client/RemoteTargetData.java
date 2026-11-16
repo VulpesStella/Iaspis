@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.compat.EntityHudData;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.MachineProviders;
@@ -56,7 +57,8 @@ final class RemoteTargetData {
         boolean machinePreview = TargetDataChannel.supportsMachines(target.getPlayer())
                 && MachineProviders.supports(target.getTileEntity());
         if (fresh && machinePreview) target.setMachinePreview(machine);
-        if (!request || now - nextRequest < 0 || (!preview && !tank && !machinePreview && bridge.syncedKeys(target.getBlockID(),
+        if (!request || now - nextRequest < 0 || (!preview && !tank && !machinePreview
+                && !EntityHudData.needsSync(entity) && bridge.syncedKeys(target.getBlockID(),
                 entity == null ? target.getBlock() : entity, target.getTileEntity()).isEmpty())) return;
 
         requested = target;
