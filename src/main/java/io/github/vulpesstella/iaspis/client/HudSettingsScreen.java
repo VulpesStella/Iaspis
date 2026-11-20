@@ -1,13 +1,12 @@
 package io.github.vulpesstella.iaspis.client;
 
+import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
+import io.github.vulpesstella.iaspis.compat.HudProviderRegistry;
+import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
-import io.github.vulpesstella.iaspis.compat.WailaBridge;
-import io.github.vulpesstella.iaspis.compat.HudProviderRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -35,24 +34,70 @@ final class HudSettingsScreen extends GuiScreen {
     private static final int ACCENT = 0xffbcade8;
 
     private enum Category {
-        APPEARANCE("appearance", PreviewSample.HORIZONTAL, PreviewSample.VERTICAL, PreviewSample.SCALE,
-                PreviewSample.OPACITY, PreviewSample.THEME, PreviewSample.ICON, PreviewSample.MOD_NAME,
-                PreviewSample.ANCHOR_X, PreviewSample.ANCHOR_Y, PreviewSample.AUTO_SCALE),
-        BEHAVIOR("behavior", PreviewSample.MODE, PreviewSample.VISIBILITY, PreviewSample.ANIMATION,
-                PreviewSample.BOSS_BAR, PreviewSample.LINGER, PreviewSample.BLOCKS, PreviewSample.ENTITIES,
-                PreviewSample.BOSSES, PreviewSample.TAB_LIST, PreviewSample.FLUID_TARGET, PreviewSample.NARRATION),
-        CONTENT("content", PreviewSample.INVENTORY, PreviewSample.INVENTORY_LIMIT, PreviewSample.INVENTORY_DETAILS,
-                PreviewSample.INVENTORY_COLUMNS, PreviewSample.INVENTORY_NAMES, PreviewSample.INVENTORY_SORT,
-                PreviewSample.HARVEST, PreviewSample.HARVEST_STYLE, PreviewSample.HARVEST_EFFECTIVE,
-                PreviewSample.HARVEST_CREATIVE, PreviewSample.HARVEST_UNBREAKABLE, PreviewSample.HARVEST_NEW_LINE, PreviewSample.HEALTH,
+        APPEARANCE(
+                "appearance",
+                PreviewSample.HORIZONTAL,
+                PreviewSample.VERTICAL,
+                PreviewSample.SCALE,
+                PreviewSample.OPACITY,
+                PreviewSample.THEME,
+                PreviewSample.ICON,
+                PreviewSample.MOD_NAME,
+                PreviewSample.ANCHOR_X,
+                PreviewSample.ANCHOR_Y,
+                PreviewSample.AUTO_SCALE),
+        BEHAVIOR(
+                "behavior",
+                PreviewSample.MODE,
+                PreviewSample.VISIBILITY,
+                PreviewSample.ANIMATION,
+                PreviewSample.BOSS_BAR,
+                PreviewSample.LINGER,
+                PreviewSample.BLOCKS,
+                PreviewSample.ENTITIES,
+                PreviewSample.BOSSES,
+                PreviewSample.TAB_LIST,
+                PreviewSample.FLUID_TARGET,
+                PreviewSample.NARRATION),
+        CONTENT(
+                "content",
+                PreviewSample.INVENTORY,
+                PreviewSample.INVENTORY_LIMIT,
+                PreviewSample.INVENTORY_DETAILS,
+                PreviewSample.INVENTORY_COLUMNS,
+                PreviewSample.INVENTORY_NAMES,
+                PreviewSample.INVENTORY_SORT,
+                PreviewSample.HARVEST,
+                PreviewSample.HARVEST_STYLE,
+                PreviewSample.HARVEST_EFFECTIVE,
+                PreviewSample.HARVEST_CREATIVE,
+                PreviewSample.HARVEST_UNBREAKABLE,
+                PreviewSample.HARVEST_NEW_LINE,
+                PreviewSample.HEALTH,
                 PreviewSample.BREAKING,
-                PreviewSample.HEALTH_LIMIT, PreviewSample.HEALTH_COLUMNS, PreviewSample.HEALTH_FRACTION,
-                PreviewSample.ARMOR, PreviewSample.ARMOR_LIMIT, PreviewSample.GROWTH, PreviewSample.FURNACE,
-                PreviewSample.TANK, PreviewSample.TANK_BAR,
-                PreviewSample.BREWING, PreviewSample.SPAWNER,
-                PreviewSample.HOPPER, PreviewSample.NOTE_BLOCK, PreviewSample.JUKEBOX, PreviewSample.ENCHANTING,
-                PreviewSample.ANIMAL, PreviewSample.HORSE, PreviewSample.OWNER, PreviewSample.VILLAGER,
-                PreviewSample.EFFECTS, PreviewSample.EFFECT_LIMIT, PreviewSample.ITEM_FRAME, PreviewSample.DROPPED_ITEM);
+                PreviewSample.HEALTH_LIMIT,
+                PreviewSample.HEALTH_COLUMNS,
+                PreviewSample.HEALTH_FRACTION,
+                PreviewSample.ARMOR,
+                PreviewSample.ARMOR_LIMIT,
+                PreviewSample.GROWTH,
+                PreviewSample.FURNACE,
+                PreviewSample.TANK,
+                PreviewSample.TANK_BAR,
+                PreviewSample.BREWING,
+                PreviewSample.SPAWNER,
+                PreviewSample.HOPPER,
+                PreviewSample.NOTE_BLOCK,
+                PreviewSample.JUKEBOX,
+                PreviewSample.ENCHANTING,
+                PreviewSample.ANIMAL,
+                PreviewSample.HORSE,
+                PreviewSample.OWNER,
+                PreviewSample.VILLAGER,
+                PreviewSample.EFFECTS,
+                PreviewSample.EFFECT_LIMIT,
+                PreviewSample.ITEM_FRAME,
+                PreviewSample.DROPPED_ITEM);
 
         final String key;
         final PreviewSample[] options;
@@ -98,17 +143,25 @@ final class HudSettingsScreen extends GuiScreen {
         for (Category category : Category.values()) {
             int index = category.ordinal();
             int tabX = MARGIN + index * (tabWidth + 4);
-            buttonList.add(new CategoryButton(CATEGORY_BUTTON + index, tabX, 29,
-                    tabWidth, BUTTON_HEIGHT, category.title()));
+            buttonList.add(
+                    new CategoryButton(
+                            CATEGORY_BUTTON + index,
+                            tabX,
+                            29,
+                            tabWidth,
+                            BUTTON_HEIGHT,
+                            category.title()));
             sectionOffsets[index] = contentTop;
             contentTop += HEADER_HEIGHT;
             for (PreviewSample sample : category.options) {
                 int x = MARGIN + PADDING;
                 int id = sample.buttonId();
                 NumberOption number = NumberOption.forKey(sample.key);
-                GuiButton option = number != null && number.isSlider()
-                        ? new Slider(id, x, 0, optionWidth, number)
-                        : new GuiButton(id, x, 0, optionWidth, BUTTON_HEIGHT, buttonLabel(sample));
+                GuiButton option =
+                        number != null && number.isSlider()
+                                ? new Slider(id, x, 0, optionWidth, number)
+                                : new GuiButton(
+                                        id, x, 0, optionWidth, BUTTON_HEIGHT, buttonLabel(sample));
                 options.add(option);
                 buttonList.add(option);
                 contentTop += ROW_HEIGHT;
@@ -117,14 +170,34 @@ final class HudSettingsScreen extends GuiScreen {
         }
         contentHeight = contentTop;
         int footerWidth = Math.min(120, settingsWidth);
-        if (!WailaBridge.INSTANCE.getModuleNames().isEmpty() || !HudProviderRegistry.settings().isEmpty()) {
+        if (!WailaBridge.INSTANCE.getModuleNames().isEmpty()
+                || !HudProviderRegistry.settings().isEmpty()) {
             footerWidth = Math.min(footerWidth, (width - 2 * MARGIN - 2 * GAP) / 3);
-            buttonList.add(new GuiButton(WAILA, (width - footerWidth) / 2, height - 29,
-                    footerWidth, BUTTON_HEIGHT, translate("iaspis.extensions.settings")));
+            buttonList.add(
+                    new GuiButton(
+                            WAILA,
+                            (width - footerWidth) / 2,
+                            height - 29,
+                            footerWidth,
+                            BUTTON_HEIGHT,
+                            translate("iaspis.extensions.settings")));
         }
-        buttonList.add(new GuiButton(RESET, MARGIN, height - 29, footerWidth, BUTTON_HEIGHT, translate("iaspis.settings.reset")));
-        buttonList.add(new GuiButton(DONE, width - MARGIN - footerWidth, height - 29,
-                footerWidth, BUTTON_HEIGHT, translate("gui.done")));
+        buttonList.add(
+                new GuiButton(
+                        RESET,
+                        MARGIN,
+                        height - 29,
+                        footerWidth,
+                        BUTTON_HEIGHT,
+                        translate("iaspis.settings.reset")));
+        buttonList.add(
+                new GuiButton(
+                        DONE,
+                        width - MARGIN - footerWidth,
+                        height - 29,
+                        footerWidth,
+                        BUTTON_HEIGHT,
+                        translate("gui.done")));
         setScroll(scroll);
     }
 
@@ -134,23 +207,35 @@ final class HudSettingsScreen extends GuiScreen {
         try {
             RenderScope.hud();
             drawDefaultBackground();
-            drawCenteredString(fontRenderer, translate("iaspis.settings.title"), width / 2, 10, 0xffffff);
+            drawCenteredString(
+                    fontRenderer, translate("iaspis.settings.title"), width / 2, 10, 0xffffff);
             int previewLeft = MARGIN + settingsWidth + GAP;
             int previewWidth = width - MARGIN - previewLeft;
             drawRect(MARGIN, LIST_TOP, MARGIN + settingsWidth, listBottom, PANEL);
             drawRect(previewLeft, 29, width - MARGIN, listBottom, PANEL);
             drawRect(previewLeft, 29, width - MARGIN, 30, EDGE);
-            drawCenteredString(fontRenderer, translate("iaspis.settings.preview"),
-                    previewLeft + previewWidth / 2, 37, ACCENT);
-            drawRect(previewLeft + PADDING, LIST_TOP - 2, width - MARGIN - PADDING, LIST_TOP - 1, EDGE);
-            ScaledResolution resolution = new ScaledResolution(mc.gameSettings, mc.displayWidth, mc.displayHeight);
+            drawCenteredString(
+                    fontRenderer,
+                    translate("iaspis.settings.preview"),
+                    previewLeft + previewWidth / 2,
+                    37,
+                    ACCENT);
+            drawRect(
+                    previewLeft + PADDING,
+                    LIST_TOP - 2,
+                    width - MARGIN - PADDING,
+                    LIST_TOP - 1,
+                    EDGE);
+            ScaledResolution resolution =
+                    new ScaledResolution(mc.gameSettings, mc.displayWidth, mc.displayHeight);
             drawPreview(resolution, previewLeft, previewWidth, mouseX, mouseY);
             drawSettingsList(mouseX, mouseY, resolution.getScaleFactor());
             for (Object entry : buttonList) {
                 GuiButton button = (GuiButton) entry;
                 if (button.id >= DONE) {
                     if (button instanceof CategoryButton) {
-                        ((CategoryButton) button).pressed = button.id == CATEGORY_BUTTON + selectedCategory;
+                        ((CategoryButton) button).pressed =
+                                button.id == CATEGORY_BUTTON + selectedCategory;
                     }
                     button.drawButton(mc, mouseX, mouseY);
                 }
@@ -161,7 +246,8 @@ final class HudSettingsScreen extends GuiScreen {
         }
     }
 
-    private void drawPreview(ScaledResolution resolution, int left, int previewWidth, int mouseX, int mouseY) {
+    private void drawPreview(
+            ScaledResolution resolution, int left, int previewWidth, int mouseX, int mouseY) {
         PreviewSample hovered = hoveredSample(mouseX, mouseY);
         long now = System.nanoTime();
         if (hovered != sample || sampleSince == 0) {
@@ -171,31 +257,53 @@ final class HudSettingsScreen extends GuiScreen {
         long millis = (now - sampleSince) / 1000000;
         int center = left + previewWidth / 2;
         int innerWidth = previewWidth - 2 * PADDING;
-        String descriptionKey = sample == PreviewSample.DEFAULT ? "iaspis.settings.example.default"
-                : "iaspis.settings.example." + sample.key;
+        String descriptionKey =
+                sample == PreviewSample.DEFAULT
+                        ? "iaspis.settings.example.default"
+                        : "iaspis.settings.example." + sample.key;
         if (sample == PreviewSample.MODE) descriptionKey += "." + NumberOption.MODE.get();
-        if (sample == PreviewSample.VISIBILITY) descriptionKey += sample.visible(millis) ? ".on" : ".off";
-        if (sample == PreviewSample.FURNACE && !Iaspis.config().getBoolean(sample.key)) descriptionKey += ".off";
-        List<?> lines = fontRenderer.listFormattedStringToWidth(translate(descriptionKey), innerWidth);
+        if (sample == PreviewSample.VISIBILITY)
+            descriptionKey += sample.visible(millis) ? ".on" : ".off";
+        if (sample == PreviewSample.FURNACE && !Iaspis.config().getBoolean(sample.key))
+            descriptionKey += ".off";
+        List<?> lines =
+                fontRenderer.listFormattedStringToWidth(translate(descriptionKey), innerWidth);
         int descriptionY = listBottom - PADDING - lines.size() * 10;
         if (sample != PreviewSample.DEFAULT) {
-            drawCenteredString(fontRenderer, translate("iaspis.settings." + sample.key),
-                    center, descriptionY - 13, ACCENT);
+            drawCenteredString(
+                    fontRenderer,
+                    translate("iaspis.settings." + sample.key),
+                    center,
+                    descriptionY - 13,
+                    ACCENT);
         }
         for (int i = 0; i < lines.size(); i++) {
-            drawCenteredString(fontRenderer, (String) lines.get(i), center, descriptionY + i * 10, 0xffc5c4ce);
+            drawCenteredString(
+                    fontRenderer, (String) lines.get(i), center, descriptionY + i * 10, 0xffc5c4ce);
         }
         int previewHeight = descriptionY - LIST_TOP - (sample == PreviewSample.DEFAULT ? 5 : 17);
         if (previewHeight > 0) {
-            overlay.renderPreview(resolution, left + PADDING, LIST_TOP, innerWidth, previewHeight, sample, millis);
+            overlay.renderPreview(
+                    resolution,
+                    left + PADDING,
+                    LIST_TOP,
+                    innerWidth,
+                    previewHeight,
+                    sample,
+                    millis);
         }
     }
 
     private PreviewSample hoveredSample(int x, int y) {
         for (GuiButton option : options) {
-            if (option instanceof Slider && ((Slider) option).dragging) return PreviewSample.forButton(option.id);
-            if (option.drawButton && overList(x, y) && x >= option.xPosition && x < trackLeft() - 4
-                    && y >= option.yPosition && y < option.yPosition + BUTTON_HEIGHT) {
+            if (option instanceof Slider && ((Slider) option).dragging)
+                return PreviewSample.forButton(option.id);
+            if (option.drawButton
+                    && overList(x, y)
+                    && x >= option.xPosition
+                    && x < trackLeft() - 4
+                    && y >= option.yPosition
+                    && y < option.yPosition + BUTTON_HEIGHT) {
                 return PreviewSample.forButton(option.id);
             }
         }
@@ -205,8 +313,12 @@ final class HudSettingsScreen extends GuiScreen {
     private void drawSettingsList(int mouseX, int mouseY, int scale) {
         RenderScope list = new RenderScope();
         try {
-            RenderScope.clip(MARGIN * scale, mc.displayHeight - listBottom * scale,
-                    settingsWidth * scale, (listBottom - LIST_TOP) * scale, scissor);
+            RenderScope.clip(
+                    MARGIN * scale,
+                    mc.displayHeight - listBottom * scale,
+                    settingsWidth * scale,
+                    (listBottom - LIST_TOP) * scale,
+                    scissor);
             for (Category category : Category.values()) {
                 int y = LIST_TOP + sectionOffsets[category.ordinal()] - scroll;
                 drawString(fontRenderer, category.title(), MARGIN + PADDING, y + 2, ACCENT);
@@ -223,13 +335,21 @@ final class HudSettingsScreen extends GuiScreen {
         int left = trackLeft();
         int thumbTop = thumbTop();
         drawRect(left, LIST_TOP + 2, left + TRACK_WIDTH, listBottom - 2, 0xff252631);
-        drawRect(left + 1, thumbTop, left + TRACK_WIDTH - 1, thumbTop + thumbHeight(),
+        drawRect(
+                left + 1,
+                thumbTop,
+                left + TRACK_WIDTH - 1,
+                thumbTop + thumbHeight(),
                 maxScroll() == 0 ? EDGE : ACCENT);
     }
 
-    private int trackLeft() { return MARGIN + settingsWidth - PADDING - TRACK_WIDTH; }
+    private int trackLeft() {
+        return MARGIN + settingsWidth - PADDING - TRACK_WIDTH;
+    }
 
-    private int tabWidth() { return (settingsWidth - 8) / Category.values().length; }
+    private int tabWidth() {
+        return (settingsWidth - 8) / Category.values().length;
+    }
 
     private int activeCategory() {
         if (maxScroll() > 0 && scroll == maxScroll()) return sectionOffsets.length - 1;
@@ -239,17 +359,24 @@ final class HudSettingsScreen extends GuiScreen {
         return 0;
     }
 
-    private int trackHeight() { return Math.max(1, listBottom - LIST_TOP - 4); }
+    private int trackHeight() {
+        return Math.max(1, listBottom - LIST_TOP - 4);
+    }
 
-    private int maxScroll() { return Math.max(0, contentHeight - (listBottom - LIST_TOP)); }
+    private int maxScroll() {
+        return Math.max(0, contentHeight - (listBottom - LIST_TOP));
+    }
 
     private int thumbHeight() {
-        return Math.min(trackHeight(), Math.max(14, trackHeight() * (listBottom - LIST_TOP) / contentHeight));
+        return Math.min(
+                trackHeight(),
+                Math.max(14, trackHeight() * (listBottom - LIST_TOP) / contentHeight));
     }
 
     private int thumbTop() {
-        return LIST_TOP + 2 + (maxScroll() == 0 ? 0
-                : (trackHeight() - thumbHeight()) * scroll / maxScroll());
+        return LIST_TOP
+                + 2
+                + (maxScroll() == 0 ? 0 : (trackHeight() - thumbHeight()) * scroll / maxScroll());
     }
 
     private boolean overList(int x, int y) {
@@ -388,8 +515,12 @@ final class HudSettingsScreen extends GuiScreen {
             drawRect(xPosition, yPosition, right, bottom, 0xff17151e);
             drawRect(xPosition + 1, yPosition + 2, right - 1, bottom - 1, 0xff4f465f);
             drawRect(xPosition + 1, bottom - 2, right - 1, bottom - 1, 0xff796c8c);
-            drawCenteredString(game.fontRenderer, displayString, xPosition + width / 2,
-                    yPosition + (height - 8) / 2 + 1, 0xffeee7f6);
+            drawCenteredString(
+                    game.fontRenderer,
+                    displayString,
+                    xPosition + width / 2,
+                    yPosition + (height - 8) / 2 + 1,
+                    0xffeee7f6);
         }
     }
 
@@ -420,7 +551,8 @@ final class HudSettingsScreen extends GuiScreen {
             game.getTextureManager().bindTexture(buttonTextures);
             GL11.glColor4f(1, 1, 1, 1);
             drawTexturedModalRect(handle, yPosition, 0, 66, HANDLE_WIDTH / 2, height);
-            drawTexturedModalRect(handle + HANDLE_WIDTH / 2, yPosition, 196, 66, HANDLE_WIDTH / 2, height);
+            drawTexturedModalRect(
+                    handle + HANDLE_WIDTH / 2, yPosition, 196, 66, HANDLE_WIDTH / 2, height);
         }
 
         @Override
@@ -434,9 +566,14 @@ final class HudSettingsScreen extends GuiScreen {
         }
 
         private void move(int mouseX) {
-            float fraction = (mouseX - xPosition - HANDLE_WIDTH / 2) / (float) (width - HANDLE_WIDTH);
-            int value = Math.max(option.min, Math.min(option.max,
-                    option.min + Math.round(fraction * (option.max - option.min))));
+            float fraction =
+                    (mouseX - xPosition - HANDLE_WIDTH / 2) / (float) (width - HANDLE_WIDTH);
+            int value =
+                    Math.max(
+                            option.min,
+                            Math.min(
+                                    option.max,
+                                    option.min + Math.round(fraction * (option.max - option.min))));
             if (value != option.get()) {
                 option.set(value);
                 updateLabel();
@@ -444,7 +581,8 @@ final class HudSettingsScreen extends GuiScreen {
         }
 
         private void updateLabel() {
-            displayString = translate("iaspis.settings." + option.key) + ": " + option.get() + option.unit;
+            displayString =
+                    translate("iaspis.settings." + option.key) + ": " + option.get() + option.unit;
         }
     }
 }

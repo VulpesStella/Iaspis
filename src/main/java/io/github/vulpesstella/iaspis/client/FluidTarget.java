@@ -63,8 +63,14 @@ final class FluidTarget {
             double fill = filledHeight(world, block, fluid, x, y, z);
             double height = Math.min(1, Math.abs(fill));
             if (!(height > 0)) continue;
-            AxisAlignedBB volume = AxisAlignedBB.getBoundingBox(x, fill < 0 ? y + 1 - height : y, z,
-                    x + 1, fill < 0 ? y + 1 : y + height, z + 1);
+            AxisAlignedBB volume =
+                    AxisAlignedBB.getBoundingBox(
+                            x,
+                            fill < 0 ? y + 1 - height : y,
+                            z,
+                            x + 1,
+                            fill < 0 ? y + 1 : y + height,
+                            z + 1);
             MovingObjectPosition hit = volume.calculateIntercept(start, end);
             if (hit != null && start.distanceTo(hit.hitVec) < limit) {
                 return new MovingObjectPosition(x, y, z, hit.sideHit, hit.hitVec);
@@ -84,7 +90,8 @@ final class FluidTarget {
 
     private static double filledHeight(World world, Block block, Fluid fluid, int x, int y, int z) {
         double fill = 1;
-        if (block instanceof IFluidBlock) fill = ((IFluidBlock) block).getFilledPercentage(world, x, y, z);
+        if (block instanceof IFluidBlock)
+            fill = ((IFluidBlock) block).getFilledPercentage(world, x, y, z);
         else if (block instanceof BlockFluid) {
             int level = world.getBlockMetadata(x, y, z);
             fill = level >= 8 ? 1 : 1 - BlockFluid.getFluidHeightPercent(level);

@@ -1,5 +1,11 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import cpw.mods.fml.common.network.IPacketHandler;
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.common.network.Player;
+import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -9,13 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-
-import cpw.mods.fml.common.network.IPacketHandler;
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
-import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.api.MultipartPart;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockHopper;
 import net.minecraft.entity.Entity;
@@ -73,22 +72,33 @@ public final class TargetDataChannel implements IPacketHandler {
                 out.writeInt(part == null ? -1 : part.getIndex());
                 out.writeUTF(part == null ? "" : part.getType());
                 out.writeBoolean(detailed);
-                out.writeBoolean(source instanceof IInventory && Iaspis.config().getBoolean("inventory.preview"));
-                out.writeBoolean(source instanceof IFluidHandler && Iaspis.config().getTankDisplay().shows(detailed));
+                out.writeBoolean(
+                        source instanceof IInventory
+                                && Iaspis.config().getBoolean("inventory.preview"));
+                out.writeBoolean(
+                        source instanceof IFluidHandler
+                                && Iaspis.config().getTankDisplay().shows(detailed));
             }
-            PacketDispatcher.sendPacketToServer(new Packet250CustomPayload(NAME, bytes.toByteArray()));
+            PacketDispatcher.sendPacketToServer(
+                    new Packet250CustomPayload(NAME, bytes.toByteArray()));
         } catch (IOException e) {
             WailaBridge.INSTANCE.report("Could not encode Iaspis target request", e);
         }
     }
 
     @Override
-    public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
+    public void onPacketData(
+            INetworkManager manager, Packet250CustomPayload packet, Player player) {
         if (DetailsChannel.NAME.equals(packet.channel)) {
-            try { DetailsChannel.receive(manager,packet,player);
-            } catch(IOException e){WailaBridge.INSTANCE.report("Invalid detail packet",e);
-            } catch(RuntimeException e){WailaBridge.INSTANCE.report("Could not read detail packet",e);
-            } catch(LinkageError e){WailaBridge.INSTANCE.report("Could not read detail packet",e);}
+            try {
+                DetailsChannel.receive(manager, packet, player);
+            } catch (IOException e) {
+                WailaBridge.INSTANCE.report("Invalid detail packet", e);
+            } catch (RuntimeException e) {
+                WailaBridge.INSTANCE.report("Could not read detail packet", e);
+            } catch (LinkageError e) {
+                WailaBridge.INSTANCE.report("Could not read detail packet", e);
+            }
             return;
         }
         if (WailaOptionsChannel.NAME.equals(packet.channel)) {
@@ -101,7 +111,8 @@ public final class TargetDataChannel implements IPacketHandler {
             }
             return;
         }
-        if (!NAME.equals(packet.channel) || packet.data == null || packet.data.length > MAX_PACKET) return;
+        if (!NAME.equals(packet.channel) || packet.data == null || packet.data.length > MAX_PACKET)
+            return;
         DataInputStream input = new DataInputStream(new ByteArrayInputStream(packet.data));
         try {
             int sequence = input.readInt();
@@ -124,15 +135,24 @@ public final class TargetDataChannel implements IPacketHandler {
             if (!entity) {
                 int metadata = input.readInt(), index = input.readInt();
                 String type = input.readUTF();
-                boolean detailed = input.readBoolean(), inventory = input.readBoolean(), tanks = input.readBoolean();
+                boolean detailed = input.readBoolean(),
+                        inventory = input.readBoolean(),
+                        tanks = input.readBoolean();
                 if (index < -1 || type.length() > 128 || input.available() != 0) return;
-                sendBlockData(sender, sequence, x, y, z, metadata, index, type, detailed, inventory, tanks);
+                sendBlockData(
+                        sender, sequence, x, y, z, metadata, index, type, detailed, inventory,
+                        tanks);
                 return;
             }
             if (input.available() != 0) return;
             NBTTagCompound data = entityData(sender, x);
-            if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY,
-                    Collections.<TankPreview>emptyList());
+            if (data != null)
+                sendResponse(
+                        sender,
+                        sequence,
+                        data,
+                        InventoryPreview.EMPTY,
+                        Collections.<TankPreview>emptyList());
         } catch (IOException e) {
             WailaBridge.INSTANCE.report("Invalid Iaspis target data packet", e);
         } catch (RuntimeException e) {
@@ -140,8 +160,13 @@ public final class TargetDataChannel implements IPacketHandler {
         }
     }
 
-    private static void sendResponse(EntityPlayerMP player, int sequence, NBTTagCompound tag,
-                                     InventoryPreview inventory, List<TankPreview> tanks) throws IOException {
+    private static void sendResponse(
+            EntityPlayerMP player,
+            int sequence,
+            NBTTagCompound tag,
+            InventoryPreview inventory,
+            List<TankPreview> tanks)
+            throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(bytes);
         output.writeInt(sequence);
@@ -153,7 +178,8 @@ public final class TargetDataChannel implements IPacketHandler {
             if (tag != null) sendResponse(player, sequence, null, inventory, tanks);
             return;
         }
-        PacketDispatcher.sendPacketToPlayer(new Packet250CustomPayload(NAME, bytes.toByteArray()), (Player) player);
+        PacketDispatcher.sendPacketToPlayer(
+                new Packet250CustomPayload(NAME, bytes.toByteArray()), (Player) player);
     }
 
     private boolean permitRequest(EntityPlayerMP player) {
@@ -164,17 +190,30 @@ public final class TargetDataChannel implements IPacketHandler {
         return true;
     }
 
-    private static void sendBlockData(EntityPlayerMP player, int sequence, int x, int y, int z,
-                                      int metadata, int index, String type, boolean detailed,
-                                      boolean wantInventory, boolean wantTanks) throws IOException {
+    private static void sendBlockData(
+            EntityPlayerMP player,
+            int sequence,
+            int x,
+            int y,
+            int z,
+            int metadata,
+            int index,
+            String type,
+            boolean detailed,
+            boolean wantInventory,
+            boolean wantTanks)
+            throws IOException {
         World world = player.worldObj;
-        if (player.getDistanceSq(x + 0.5, y + 0.5, z + 0.5) > 64 || !world.blockExists(x, y, z)) return;
+        if (player.getDistanceSq(x + 0.5, y + 0.5, z + 0.5) > 64 || !world.blockExists(x, y, z))
+            return;
         TileEntity tile = world.getBlockTileEntity(x, y, z);
         if (tile == null) return;
 
         int id = world.getBlockId(x, y, z);
         Block block = Block.blocksList[id];
-        Vec3 eyes = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+        Vec3 eyes =
+                Vec3.createVectorHelper(
+                        player.posX, player.posY + player.getEyeHeight(), player.posZ);
         // The brewing stand's selectable base sits near the bottom of the block.
         double hitHeight = block == Block.brewingStand ? 0.0625 : 0.5;
         Vec3 point = Vec3.createVectorHelper(x + 0.5, y + hitHeight, z + 0.5);
@@ -191,7 +230,9 @@ public final class TargetDataChannel implements IPacketHandler {
         Target target = new Target(world, player, player, hit, 1, null);
         MultipartPart part = target.getMultipartPart();
         if (target.getMetadata() != metadata || (multipart && part == null)) return;
-        if (part == null ? index != -1 || !type.isEmpty() : index != part.getIndex() || !type.equals(part.getType())) return;
+        if (part == null
+                ? index != -1 || !type.isEmpty()
+                : index != part.getIndex() || !type.equals(part.getType())) return;
         Object source = target.getPreviewSource();
 
         WailaBridge bridge = WailaBridge.INSTANCE;
@@ -204,11 +245,14 @@ public final class TargetDataChannel implements IPacketHandler {
         }
         if (block == Block.hopperBlock) {
             if (data == null) data = new NBTTagCompound();
-            data.setBoolean(HOPPER_LOCKED,
+            data.setBoolean(
+                    HOPPER_LOCKED,
                     !BlockHopper.getIsBlockNotPoweredFromMetadata(world.getBlockMetadata(x, y, z)));
         }
         InventoryPreview inventory = InventoryPreview.EMPTY;
-        if (wantInventory && source instanceof IInventory && Iaspis.config().getBoolean("inventory.preview")) {
+        if (wantInventory
+                && source instanceof IInventory
+                && Iaspis.config().getBoolean("inventory.preview")) {
             try {
                 inventory = InventoryPreview.collect(target);
             } catch (RuntimeException e) {
@@ -218,7 +262,9 @@ public final class TargetDataChannel implements IPacketHandler {
             }
         }
         List<TankPreview> tanks = Collections.emptyList();
-        if (wantTanks && source instanceof IFluidHandler && Iaspis.config().getTankDisplay().shows(detailed)
+        if (wantTanks
+                && source instanceof IFluidHandler
+                && Iaspis.config().getTankDisplay().shows(detailed)
                 && supportsTanks(player)) {
             try {
                 tanks = TankPreview.collect(target);
@@ -233,7 +279,9 @@ public final class TargetDataChannel implements IPacketHandler {
 
     private static NBTTagCompound entityData(EntityPlayerMP player, int id) {
         Entity entity = player.worldObj.getEntityByID(id);
-        if (entity == null || entity instanceof EntityPlayer || player.getDistanceSqToEntity(entity) > 64
+        if (entity == null
+                || entity instanceof EntityPlayer
+                || player.getDistanceSqToEntity(entity) > 64
                 || !player.canEntityBeSeen(entity)) return null;
         List<String> keys = WailaBridge.INSTANCE.syncedKeys(-1, entity, null);
         if (keys.isEmpty() && !EntityHudData.needsSync(entity)) return null;

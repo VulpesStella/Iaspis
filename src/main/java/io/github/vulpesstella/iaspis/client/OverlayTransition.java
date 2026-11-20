@@ -55,7 +55,10 @@ final class OverlayTransition {
         }
 
         boolean sameSizeAndPosition(Bounds other) {
-            return left == other.left && top == other.top && width == other.width && height == other.height;
+            return left == other.left
+                    && top == other.top
+                    && width == other.width
+                    && height == other.height;
         }
     }
 }

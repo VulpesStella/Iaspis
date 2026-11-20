@@ -1,9 +1,8 @@
 package mcp.mobius.waila.api.impl;
 
+import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import java.util.HashMap;
 import java.util.Set;
-
-import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 
 /** Compatibility entry point for legacy extensions that seed option defaults directly. */

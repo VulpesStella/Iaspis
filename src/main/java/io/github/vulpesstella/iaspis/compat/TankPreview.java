@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
@@ -29,7 +28,9 @@ public final class TankPreview {
 
     static List<TankPreview> collect(Target target) {
         Object source = target.getPreviewSource();
-        return source instanceof IFluidHandler ? collect((IFluidHandler) source) : Collections.<TankPreview>emptyList();
+        return source instanceof IFluidHandler
+                ? collect((IFluidHandler) source)
+                : Collections.<TankPreview>emptyList();
     }
 
     private static List<TankPreview> collect(IFluidHandler handler) {
@@ -54,7 +55,8 @@ public final class TankPreview {
             int i = 0;
             for (; i < previous; i++) {
                 TankPreview tank = tanks.get(i);
-                if (tank.fluid == fluid && tank.amount == amount && tank.capacity == info.capacity) break;
+                if (tank.fluid == fluid && tank.amount == amount && tank.capacity == info.capacity)
+                    break;
             }
             if (i == previous) tanks.add(new TankPreview(fluid, amount, info.capacity));
         }
@@ -79,14 +81,16 @@ public final class TankPreview {
             return Collections.emptyList();
         }
         int size = in.readUnsignedByte();
-        if (size > LIMIT || in.available() < size * 12) throw new IOException("Invalid tank preview size");
+        if (size > LIMIT || in.available() < size * 12)
+            throw new IOException("Invalid tank preview size");
         List<TankPreview> tanks = new ArrayList<TankPreview>(size);
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
             int amount = in.readInt();
             int capacity = in.readInt();
             if (amount < 0 || capacity <= 0) throw new IOException("Invalid tank quantities");
-            tanks.add(new TankPreview(id == 0 ? null : FluidRegistry.getFluid(id), amount, capacity));
+            tanks.add(
+                    new TankPreview(id == 0 ? null : FluidRegistry.getFluid(id), amount, capacity));
         }
         return Collections.unmodifiableList(tanks);
     }

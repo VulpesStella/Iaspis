@@ -1,10 +1,9 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import io.github.vulpesstella.iaspis.api.MultipartPart;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
-
-import io.github.vulpesstella.iaspis.api.MultipartPart;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MovingObjectPosition;
@@ -47,7 +46,9 @@ final class MultipartResolver {
             tuple = Class.forName("scala.Tuple2", false, loader);
             data = extended.getField("data");
             first = tuple.getMethod("_1");
-            parts = Class.forName("codechicken.multipart.TileMultipart", false, loader).getMethod("jPartList");
+            parts =
+                    Class.forName("codechicken.multipart.TileMultipart", false, loader)
+                            .getMethod("jPartList");
             Class<?> part = Class.forName("codechicken.multipart.TMultiPart", false, loader);
             type = part.getMethod("getType");
             save = part.getMethod("save", NBTTagCompound.class);

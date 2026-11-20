@@ -1,13 +1,12 @@
 package io.github.vulpesstella.iaspis.client;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
-
 import cpw.mods.fml.common.ITickHandler;
 import cpw.mods.fml.common.TickType;
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.WailaOptionsChannel;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.INetworkManager;
 
@@ -40,7 +39,8 @@ final class RemoteWailaOptions implements ITickHandler {
         return providerModes.get(id);
     }
 
-    synchronized void receiveHudProviderModes(INetworkManager manager, Map<String, DisplayMode> values) {
+    synchronized void receiveHudProviderModes(
+            INetworkManager manager, Map<String, DisplayMode> values) {
         if (currentConnection() == manager && manager == connection) {
             providerModes = Collections.unmodifiableMap(values);
         }
@@ -55,7 +55,8 @@ final class RemoteWailaOptions implements ITickHandler {
             providerModes = Collections.emptyMap();
             nextRequest = 0;
         }
-        if (connection == null || options != null || !WailaOptionsChannel.available(game.thePlayer)) return;
+        if (connection == null || options != null || !WailaOptionsChannel.available(game.thePlayer))
+            return;
         long now = System.nanoTime();
         if (nextRequest == 0 || now - nextRequest >= 0) {
             nextRequest = now + RETRY;
@@ -65,15 +66,20 @@ final class RemoteWailaOptions implements ITickHandler {
 
     private INetworkManager currentConnection() {
         return game.theWorld == null || game.thePlayer == null || game.getNetHandler() == null
-                ? null : game.getNetHandler().getNetManager();
+                ? null
+                : game.getNetHandler().getNetManager();
     }
 
     @Override
     public void tickStart(EnumSet<TickType> types, Object... data) {}
 
     @Override
-    public EnumSet<TickType> ticks() { return EnumSet.of(TickType.CLIENT); }
+    public EnumSet<TickType> ticks() {
+        return EnumSet.of(TickType.CLIENT);
+    }
 
     @Override
-    public String getLabel() { return "Iaspis WAILA options"; }
+    public String getLabel() {
+        return "Iaspis WAILA options";
+    }
 }

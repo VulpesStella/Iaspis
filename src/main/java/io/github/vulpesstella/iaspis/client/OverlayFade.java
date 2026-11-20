@@ -57,8 +57,16 @@ final class OverlayFade {
         if (width > textureWidth || height > textureHeight) {
             textureWidth = Math.max(textureWidth, nextPowerOfTwo(width));
             textureHeight = Math.max(textureHeight, nextPowerOfTwo(height));
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB8, textureWidth, textureHeight, 0,
-                    GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (java.nio.ByteBuffer) null);
+            GL11.glTexImage2D(
+                    GL11.GL_TEXTURE_2D,
+                    0,
+                    GL11.GL_RGB8,
+                    textureWidth,
+                    textureHeight,
+                    0,
+                    GL11.GL_RGB,
+                    GL11.GL_UNSIGNED_BYTE,
+                    (java.nio.ByteBuffer) null);
         }
         GL11.glCopyTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, x, y, width, height);
         return true;
@@ -71,7 +79,8 @@ final class OverlayFade {
         float bottom = top + height / (float) pixelScale;
         float u = width / (float) textureWidth;
         float v = height / (float) textureHeight;
-        // Blend the captured background over the result so item models fade with the rest of the HUD.
+        // Blend the captured background over the result so item models fade with the rest of the
+        // HUD.
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDisable(GL11.GL_ALPHA_TEST);
         GL11.glDisable(GL11.GL_LIGHTING);

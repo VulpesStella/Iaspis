@@ -1,5 +1,10 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage;
+import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,12 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage;
-import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.api.MultipartPart;
 import mcp.mobius.waila.api.IWailaBlockDecorator;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataProvider;
@@ -26,29 +25,38 @@ import mcp.mobius.waila.api.IWailaFMPDecorator;
 import mcp.mobius.waila.api.IWailaFMPProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 import mcp.mobius.waila.api.IWailaSummaryProvider;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
 
 @SuppressWarnings("rawtypes") // The WAILA 1.5.2a registrar uses raw Class parameters.
 public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     public static final WailaBridge INSTANCE = new WailaBridge();
 
-    public enum Section { HEAD, BODY, TAIL, OVERRIDE }
+    public enum Section {
+        HEAD,
+        BODY,
+        TAIL,
+        OVERRIDE
+    }
 
-    private final List<Registration<IWailaDataProvider>> blocks = new ArrayList<Registration<IWailaDataProvider>>();
-    private final List<Registration<IWailaEntityProvider>> entities = new ArrayList<Registration<IWailaEntityProvider>>();
-    private final List<Registration<IWailaBlockDecorator>> decorators = new ArrayList<Registration<IWailaBlockDecorator>>();
-    private final List<Registration<IWailaFMPProvider>> multipartProviders = new ArrayList<Registration<IWailaFMPProvider>>();
-    private final List<Registration<IWailaFMPDecorator>> multipartDecorators = new ArrayList<Registration<IWailaFMPDecorator>>();
+    private final List<Registration<IWailaDataProvider>> blocks =
+            new ArrayList<Registration<IWailaDataProvider>>();
+    private final List<Registration<IWailaEntityProvider>> entities =
+            new ArrayList<Registration<IWailaEntityProvider>>();
+    private final List<Registration<IWailaBlockDecorator>> decorators =
+            new ArrayList<Registration<IWailaBlockDecorator>>();
+    private final List<Registration<IWailaFMPProvider>> multipartProviders =
+            new ArrayList<Registration<IWailaFMPProvider>>();
+    private final List<Registration<IWailaFMPDecorator>> multipartDecorators =
+            new ArrayList<Registration<IWailaFMPDecorator>>();
     private final List<Registration<String>> syncedKeys = new ArrayList<Registration<String>>();
-    private final Map<String, HashMap<String, String>> modules = new LinkedHashMap<String, HashMap<String, String>>();
+    private final Map<String, HashMap<String, String>> modules =
+            new LinkedHashMap<String, HashMap<String, String>>();
     private final Set<String> optionKeys = new LinkedHashSet<String>();
     private final Set<String> remoteOptions = new HashSet<String>();
     private final Set<String> reported = Collections.synchronizedSet(new HashSet<String>());
     private Logger log;
 
-    private WailaBridge() {
-    }
+    private WailaBridge() {}
 
     public void initialize(Logger logger) {
         log = logger;
@@ -61,19 +69,27 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
             try {
                 if ("register".equalsIgnoreCase(message.key)) {
                     if ("WailaHarvestability".equals(message.getSender())
-                            && "squeek.wailaharvestability.WailaHandler.callbackRegister".equals(value)) continue;
+                            && "squeek.wailaharvestability.WailaHandler.callbackRegister"
+                                    .equals(value)) continue;
                     int separator = value.lastIndexOf('.');
                     if (separator < 1 || separator == value.length() - 1) {
-                        throw new IllegalArgumentException("Expected a fully qualified registration method");
+                        throw new IllegalArgumentException(
+                                "Expected a fully qualified registration method");
                     }
-                    Class<?> owner = Class.forName(value.substring(0, separator), true,
-                            Loader.instance().getModClassLoader());
-                    Method callback = owner.getDeclaredMethod(value.substring(separator + 1), IWailaRegistrar.class);
+                    Class<?> owner =
+                            Class.forName(
+                                    value.substring(0, separator),
+                                    true,
+                                    Loader.instance().getModClassLoader());
+                    Method callback =
+                            owner.getDeclaredMethod(
+                                    value.substring(separator + 1), IWailaRegistrar.class);
                     callback.invoke(null, this);
                     log.info("Registered WAILA providers from " + message.getSender());
                 } else if ("addconfig".equalsIgnoreCase(message.key)) {
                     String[] fields = value.split("\\$\\$", 3);
-                    if (fields.length != 3) throw new IllegalArgumentException("Expected module$$key$$label");
+                    if (fields.length != 3)
+                        throw new IllegalArgumentException("Expected module$$key$$label");
                     addConfig(fields[0], fields[1], fields[2]);
                 }
             } catch (Exception e) {
@@ -98,13 +114,22 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
         optionKeys.add(key);
     }
 
-    public void addConfig(String module, String key) { addConfig(module, key, "option." + key); }
+    public void addConfig(String module, String key) {
+        addConfig(module, key, "option." + key);
+    }
+
     public void addConfigRemote(String module, String key, String label) {
         addConfig(module, key, label);
         remoteOptions.add(key);
     }
-    public void addConfigRemote(String module, String key) { addConfigRemote(module, key, "option." + key); }
-    public Set<String> getModuleNames() { return new LinkedHashSet<String>(modules.keySet()); }
+
+    public void addConfigRemote(String module, String key) {
+        addConfigRemote(module, key, "option." + key);
+    }
+
+    public Set<String> getModuleNames() {
+        return new LinkedHashSet<String>(modules.keySet());
+    }
 
     public HashMap<String, String> getConfigKeys(String module) {
         Map<String, String> keys = modules.get(module);
@@ -117,7 +142,9 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
         return labels;
     }
 
-    public boolean getConfig(String key) { return getConfig(key, true); }
+    public boolean getConfig(String key) {
+        return getConfig(key, true);
+    }
 
     public boolean getConfig(String key, boolean defaultValue) {
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
@@ -128,7 +155,9 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
         return Iaspis.config().getBoolean(key, defaultValue);
     }
 
-    public boolean requiresServer(String key) { return remoteOptions.contains(key); }
+    public boolean requiresServer(String key) {
+        return remoteOptions.contains(key);
+    }
 
     public Boolean forcedOption(String key) {
         return optionKeys.contains(key) ? Iaspis.proxy.forcedWailaOption(key) : null;
@@ -137,13 +166,15 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     Map<String, Boolean> lockedOptions() {
         Map<String, Boolean> options = new LinkedHashMap<String, Boolean>();
         for (String key : optionKeys) {
-            if (Iaspis.config().isWailaOptionLocked(key)) options.put(key, Iaspis.config().getBoolean(key));
+            if (Iaspis.config().isWailaOptionLocked(key))
+                options.put(key, Iaspis.config().getBoolean(key));
         }
         return options;
     }
 
     public List<IWailaDataProvider> blocks(Section section, Target target) {
-        return matching(blocks, section, target.getBlockID(), target.getBlock(), target.getTileEntity());
+        return matching(
+                blocks, section, target.getBlockID(), target.getBlock(), target.getTileEntity());
     }
 
     public List<IWailaEntityProvider> entities(Section section, Target target) {
@@ -151,7 +182,12 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     }
 
     public List<IWailaBlockDecorator> decorators(Target target) {
-        return matching(decorators, Section.BODY, target.getBlockID(), target.getBlock(), target.getTileEntity());
+        return matching(
+                decorators,
+                Section.BODY,
+                target.getBlockID(),
+                target.getBlock(),
+                target.getTileEntity());
     }
 
     public List<String> syncedKeys(int blockId, Object target, Object tile) {
@@ -163,7 +199,8 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     public List<MultipartAccessor> multipart(Target target) {
         MultipartPart part = target.getMultipartPart();
         if (!hasMultipartProviders() || part == null) return Collections.emptyList();
-        return Collections.singletonList(new MultipartAccessor(target, part.getType(), part.getSnapshot()));
+        return Collections.singletonList(
+                new MultipartAccessor(target, part.getType(), part.getSnapshot()));
     }
 
     public List<IWailaFMPProvider> multipartProviders(Section section, String id) {
@@ -186,23 +223,31 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
         return false;
     }
 
-    private static <T> List<T> matchingPart(List<Registration<T>> registrations, Section section, String id) {
+    private static <T> List<T> matchingPart(
+            List<Registration<T>> registrations, Section section, String id) {
         Set<T> providers = new LinkedHashSet<T>();
         for (Registration<T> registration : registrations) {
-            if (registration.section == section && id.equals(registration.matcher)) providers.add(registration.provider);
+            if (registration.section == section && id.equals(registration.matcher))
+                providers.add(registration.provider);
         }
         return new ArrayList<T>(providers);
     }
 
-    private static <T> List<T> matching(List<Registration<T>> registrations, Section section,
-                                         int blockId, Object target, Object tile) {
+    private static <T> List<T> matching(
+            List<Registration<T>> registrations,
+            Section section,
+            int blockId,
+            Object target,
+            Object tile) {
         Set<T> result = new LinkedHashSet<T>();
         for (Registration<T> registration : registrations) {
-            if (registration.section == section && (registration.matcher.equals(blockId)
-                    || registration.matches(target))) result.add(registration.provider);
+            if (registration.section == section
+                    && (registration.matcher.equals(blockId) || registration.matches(target)))
+                result.add(registration.provider);
         }
         for (Registration<T> registration : registrations) {
-            if (registration.section == section && registration.matches(tile)) result.add(registration.provider);
+            if (registration.section == section && registration.matches(tile))
+                result.add(registration.provider);
         }
         return new ArrayList<T>(result);
     }
@@ -300,5 +345,6 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     }
 
     public void registerDocTextFile(String filename) {}
+
     public void registerShortDataProvider(IWailaSummaryProvider provider, Class item) {}
 }

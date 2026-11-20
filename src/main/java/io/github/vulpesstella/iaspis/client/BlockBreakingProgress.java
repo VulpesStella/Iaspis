@@ -1,10 +1,9 @@
 package io.github.vulpesstella.iaspis.client;
 
-import java.lang.reflect.Field;
-
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import java.lang.reflect.Field;
 import net.minecraft.block.Block;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.util.MovingObjectPosition;
@@ -18,21 +17,32 @@ final class BlockBreakingProgress {
         this.canHarvest = canHarvest;
     }
 
-    static BlockBreakingProgress read(PlayerControllerMP controller, Target target, float partialTicks) {
-        if (controller == null || target == null || target.getBlock() == null || controller.isInCreativeMode()
+    static BlockBreakingProgress read(
+            PlayerControllerMP controller, Target target, float partialTicks) {
+        if (controller == null
+                || target == null
+                || target.getBlock() == null
+                || controller.isInCreativeMode()
                 || !PreviewSample.BREAKING.enabled()) return null;
         MiningFields fields = FieldLookup.FIELDS;
         if (fields == null) return null;
         MovingObjectPosition hit = target.getPosition();
         try {
-            if (!fields.active.getBoolean(controller) || fields.x.getInt(controller) != hit.blockX
-                    || fields.y.getInt(controller) != hit.blockY || fields.z.getInt(controller) != hit.blockZ) return null;
+            if (!fields.active.getBoolean(controller)
+                    || fields.x.getInt(controller) != hit.blockX
+                    || fields.y.getInt(controller) != hit.blockY
+                    || fields.z.getInt(controller) != hit.blockZ) return null;
             float damage = fields.damage.getFloat(controller);
             if (!(damage > 0 && damage < 1)) return null;
 
             Block block = target.getBlock();
-            float perTick = block.getPlayerRelativeBlockHardness(target.getPlayer(), target.getWorld(),
-                    hit.blockX, hit.blockY, hit.blockZ);
+            float perTick =
+                    block.getPlayerRelativeBlockHardness(
+                            target.getPlayer(),
+                            target.getWorld(),
+                            hit.blockX,
+                            hit.blockY,
+                            hit.blockZ);
             if (perTick > 0 && perTick < 1) {
                 damage += perTick * Math.max(0, Math.min(1, partialTicks));
             }

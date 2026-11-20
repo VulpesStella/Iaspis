@@ -1,6 +1,16 @@
 plugins {
     id 'dev.desiderium.retro.loom'
     id 'maven-publish'
+    id 'com.diffplug.spotless' version '8.10.3'
+}
+
+spotless {
+    java {
+        target 'src/**/*.java', 'examples/*/src/**/*.java'
+        googleJavaFormat('1.28.0').aosp()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 group = providers.gradleProperty('mod_group').get()
 

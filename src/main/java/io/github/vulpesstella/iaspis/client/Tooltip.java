@@ -1,28 +1,27 @@
 package io.github.vulpesstella.iaspis.client;
 
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.registry.EntityRegistry;
+import cpw.mods.fml.common.registry.GameRegistry;
+import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
+import io.github.vulpesstella.iaspis.api.HudComponent;
+import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
+import io.github.vulpesstella.iaspis.compat.HudProviderRegistry.Changes;
+import io.github.vulpesstella.iaspis.compat.InventoryPreview;
+import io.github.vulpesstella.iaspis.compat.MachinePreview;
+import io.github.vulpesstella.iaspis.compat.MultipartAccessor;
+import io.github.vulpesstella.iaspis.compat.TankPreview;
+import io.github.vulpesstella.iaspis.compat.Target;
+import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import io.github.vulpesstella.iaspis.compat.WailaBridge.Section;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
-import cpw.mods.fml.common.registry.EntityRegistry;
-import cpw.mods.fml.common.registry.GameRegistry;
-import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.api.HudComponent;
-import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
-import io.github.vulpesstella.iaspis.compat.HudProviderRegistry.Changes;
-import io.github.vulpesstella.iaspis.compat.Target;
-import io.github.vulpesstella.iaspis.compat.TankPreview;
-import io.github.vulpesstella.iaspis.compat.InventoryPreview;
-import io.github.vulpesstella.iaspis.compat.MultipartAccessor;
-import io.github.vulpesstella.iaspis.compat.MachinePreview;
-import io.github.vulpesstella.iaspis.compat.WailaBridge;
-import io.github.vulpesstella.iaspis.compat.WailaBridge.Section;
-import io.github.vulpesstella.iaspis.client.HudSettings.NumberOption;
 import mcp.mobius.waila.api.IWailaBlock;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaEntityProvider;
@@ -99,36 +98,54 @@ final class Tooltip {
         if (machine.unit != null) energy = machine;
         processing = machine.progress;
         if (energy.unit != null) {
-            if (energy.maxInput >= 0) lines.add(bodyEnd++, energyLimit("inputLimit",energy.maxInput,energy.unit));
-            if (energy.maxOutput >= 0) lines.add(bodyEnd++, energyLimit("outputLimit",energy.maxOutput,energy.unit));
+            if (energy.maxInput >= 0)
+                lines.add(bodyEnd++, energyLimit("inputLimit", energy.maxInput, energy.unit));
+            if (energy.maxOutput >= 0)
+                lines.add(bodyEnd++, energyLimit("outputLimit", energy.maxOutput, energy.unit));
         }
         InventoryPreview preview = target.getInventoryPreview();
         boolean showInventory = true;
-        if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
+        if (target.getTileEntity() instanceof TileEntityFurnace
+                && Iaspis.config().getBoolean("furnace.enabled")) {
             int progress = target.getNBTInteger(target.getNBTData(), "CookTime");
             showInventory = !applyFurnaceProgress(preview.furnaceSlots, progress);
         }
         if (showInventory) applyInventory(preview.stacks, preview.truncated, details, detailKey);
-        if (detailKey != null && tankDisplay == DisplayMode.DETAILS && !details && !tankPreview.isEmpty()) {
-            String hint = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
+        if (detailKey != null
+                && tankDisplay == DisplayMode.DETAILS
+                && !details
+                && !tankPreview.isEmpty()) {
+            String hint =
+                    "\u00a77"
+                            + StatCollector.translateToLocalFormatted(
+                                    "iaspis.details.hold", detailKey);
             if (!lines.contains(hint)) lines.add(hint);
         }
     }
 
-    private void applyInventory(List<ItemStack> stacks, boolean truncated, boolean details, String detailKey) {
+    private void applyInventory(
+            List<ItemStack> stacks, boolean truncated, boolean details, String detailKey) {
         int limit = (details ? NumberOption.INVENTORY_DETAILS : NumberOption.INVENTORY_LIMIT).get();
         if (!stacks.isEmpty() && PreviewSample.INVENTORY_SORT.enabled()) {
             stacks = new ArrayList<ItemStack>(stacks);
-            Collections.sort(stacks, new Comparator<ItemStack>() {
-                @Override
-                public int compare(ItemStack a, ItemStack b) {
-                    return Integer.compare(b.stackSize, a.stackSize);
-                }
-            });
+            Collections.sort(
+                    stacks,
+                    new Comparator<ItemStack>() {
+                        @Override
+                        public int compare(ItemStack a, ItemStack b) {
+                            return Integer.compare(b.stackSize, a.stackSize);
+                        }
+                    });
         }
         inventory = stacks.subList(0, Math.min(limit, stacks.size()));
-        if (detailKey != null && !details && NumberOption.INVENTORY_DETAILS.get() > limit && (stacks.size() > limit || truncated)) {
-            lines.add("\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey));
+        if (detailKey != null
+                && !details
+                && NumberOption.INVENTORY_DETAILS.get() > limit
+                && (stacks.size() > limit || truncated)) {
+            lines.add(
+                    "\u00a77"
+                            + StatCollector.translateToLocalFormatted(
+                                    "iaspis.details.hold", detailKey));
         } else if (truncated || stacks.size() > limit) {
             lines.add("\u00a77" + StatCollector.translateToLocal("iaspis.inventory.truncated"));
         }
@@ -166,38 +183,54 @@ final class Tooltip {
             case ARMOR:
             case ARMOR_LIMIT:
                 entityName = StatCollector.translateToLocal("entity.Zombie.name");
-                if (PreviewSample.ARMOR.enabled() || sample == PreviewSample.ARMOR_LIMIT) tooltip.armor = 18;
+                if (PreviewSample.ARMOR.enabled() || sample == PreviewSample.ARMOR_LIMIT)
+                    tooltip.armor = 18;
                 break;
             case HARVEST:
             case HARVEST_STYLE:
             case HARVEST_CREATIVE:
             case HARVEST_NEW_LINE:
-                boolean shearPreview = sample == PreviewSample.HARVEST_STYLE
-                        && NumberOption.HARVEST_STYLE.get() == HudSettings.HARVESTABILITY_STYLE && millis % 4800 >= 2400;
+                boolean shearPreview =
+                        sample == PreviewSample.HARVEST_STYLE
+                                && NumberOption.HARVEST_STYLE.get()
+                                        == HudSettings.HARVESTABILITY_STYLE
+                                && millis % 4800 >= 2400;
                 Block harvestBlock = shearPreview ? Block.leaves : Block.oreDiamond;
                 tooltip.icon = new ItemStack(harvestBlock);
-                if (sample == PreviewSample.HARVEST_STYLE || sample == PreviewSample.HARVEST_NEW_LINE || sample.enabled()) {
-                    tooltip.applyHarvest(HarvestHint.preview(harvestBlock, millis % 2400 >= 1200), entityDetails, null);
+                if (sample == PreviewSample.HARVEST_STYLE
+                        || sample == PreviewSample.HARVEST_NEW_LINE
+                        || sample.enabled()) {
+                    tooltip.applyHarvest(
+                            HarvestHint.preview(harvestBlock, millis % 2400 >= 1200),
+                            entityDetails,
+                            null);
                 }
                 break;
             case HARVEST_EFFECTIVE:
                 tooltip.icon = new ItemStack(Block.wood);
-                if (sample.enabled()) tooltip.applyHarvest(HarvestHint.preview(Block.wood, true), entityDetails, null);
+                if (sample.enabled())
+                    tooltip.applyHarvest(
+                            HarvestHint.preview(Block.wood, true), entityDetails, null);
                 break;
             case HARVEST_UNBREAKABLE:
                 tooltip.icon = new ItemStack(Block.bedrock);
-                if (sample.enabled()) detail = StatCollector.translateToLocal("iaspis.harvest.unbreakable");
+                if (sample.enabled())
+                    detail = StatCollector.translateToLocal("iaspis.harvest.unbreakable");
                 break;
             case GROWTH:
                 tooltip.icon = new ItemStack(Item.wheat);
-                if (Iaspis.config().getBoolean(sample.key)) detail = cropProgress(millis % 2400 < 1500 ? 4 : 7, 7);
+                if (Iaspis.config().getBoolean(sample.key))
+                    detail = cropProgress(millis % 2400 < 1500 ? 4 : 7, 7);
                 break;
             case FURNACE:
                 tooltip.icon = new ItemStack(Block.furnaceIdle);
-                List<ItemStack> items = Iaspis.config().getBoolean("inventory.preview")
-                        ? Arrays.asList(new ItemStack(Block.oreIron, 8), new ItemStack(Item.coal, 5),
-                                new ItemStack(Item.ingotIron, 2))
-                        : Collections.<ItemStack>emptyList();
+                List<ItemStack> items =
+                        Iaspis.config().getBoolean("inventory.preview")
+                                ? Arrays.asList(
+                                        new ItemStack(Block.oreIron, 8),
+                                        new ItemStack(Item.coal, 5),
+                                        new ItemStack(Item.ingotIron, 2))
+                                : Collections.<ItemStack>emptyList();
                 boolean showProgress = Iaspis.config().getBoolean(sample.key);
                 int progress = 1 + (int) (millis % 2200) * 199 / 2200;
                 if (!showProgress || !tooltip.applyFurnaceProgress(items, progress)) {
@@ -206,8 +239,11 @@ final class Tooltip {
                 break;
             case FLUID_TARGET:
                 tooltip.fluid = FluidRegistry.WATER;
-                entityName = StatCollector.translateToLocal(millis % 3200 < 1600
-                        ? "iaspis.fluid.source" : "iaspis.fluid.flowing");
+                entityName =
+                        StatCollector.translateToLocal(
+                                millis % 3200 < 1600
+                                        ? "iaspis.fluid.source"
+                                        : "iaspis.fluid.flowing");
                 break;
             case TANK:
             case TANK_BAR:
@@ -216,17 +252,25 @@ final class Tooltip {
                 DisplayMode tankSample = Iaspis.config().getTankDisplay();
                 boolean showTankDetails = millis % 3200 >= 1600;
                 if (tankSample.shows(showTankDetails)) {
-                    tooltip.tanks = Arrays.asList(new TankPreview(FluidRegistry.WATER, 6000, 8000),
-                            new TankPreview(null, 0, 4000));
+                    tooltip.tanks =
+                            Arrays.asList(
+                                    new TankPreview(FluidRegistry.WATER, 6000, 8000),
+                                    new TankPreview(null, 0, 4000));
                 } else if (tankSample == DisplayMode.DETAILS && detailKey != null) {
-                    detail = "\u00a77" + StatCollector.translateToLocalFormatted("iaspis.details.hold", detailKey);
+                    detail =
+                            "\u00a77"
+                                    + StatCollector.translateToLocalFormatted(
+                                            "iaspis.details.hold", detailKey);
                 }
                 break;
             case BREWING:
                 tooltip.icon = new ItemStack(Item.brewingStand);
                 if (sample.enabled()) tooltip.brewProgress = 0.2F + (millis % 2200) / 3000.0F;
                 if (PreviewSample.INVENTORY.enabled()) {
-                    exampleInventory = Arrays.asList(new ItemStack(Item.potion), new ItemStack(Item.netherStalkSeeds, 3));
+                    exampleInventory =
+                            Arrays.asList(
+                                    new ItemStack(Item.potion),
+                                    new ItemStack(Item.netherStalkSeeds, 3));
                 }
                 break;
             case SPAWNER:
@@ -236,7 +280,8 @@ final class Tooltip {
             case HOPPER:
                 tooltip.icon = new ItemStack(Block.hopperBlock);
                 if (sample.enabled()) detail = VanillaBlockDetails.hopper(millis % 3000 < 1500);
-                if (PreviewSample.INVENTORY.enabled()) exampleInventory = Collections.singletonList(new ItemStack(Item.coal, 8));
+                if (PreviewSample.INVENTORY.enabled())
+                    exampleInventory = Collections.singletonList(new ItemStack(Item.coal, 8));
                 break;
             case NOTE_BLOCK:
                 tooltip.icon = new ItemStack(Block.music);
@@ -244,16 +289,23 @@ final class Tooltip {
                 break;
             case JUKEBOX:
                 tooltip.icon = new ItemStack(Block.jukebox);
-                if (sample.enabled()) VanillaBlockDetails.setRecord(tooltip, new ItemStack(Item.recordCat));
+                if (sample.enabled())
+                    VanillaBlockDetails.setRecord(tooltip, new ItemStack(Item.recordCat));
                 break;
             case ENCHANTING:
                 tooltip.icon = new ItemStack(Block.enchantmentTable);
-                if (sample.enabled()) detail = VanillaBlockDetails.enchanting(millis % 2800 < 1400 ? 8 : 15);
+                if (sample.enabled())
+                    detail = VanillaBlockDetails.enchanting(millis % 2800 < 1400 ? 8 : 15);
                 break;
             case ANIMAL:
                 entityName = StatCollector.translateToLocal("entity.Cow.name");
-                if (sample.enabled()) detail = VanillaEntityDetails.timed(millis % 3400 < 1700
-                        ? "iaspis.entity.growth" : "iaspis.entity.cooldown", 1800 - millis % 1700 / 50);
+                if (sample.enabled())
+                    detail =
+                            VanillaEntityDetails.timed(
+                                    millis % 3400 < 1700
+                                            ? "iaspis.entity.growth"
+                                            : "iaspis.entity.cooldown",
+                                    1800 - millis % 1700 / 50);
                 break;
             case HORSE:
                 entityName = StatCollector.translateToLocal("entity.EntityHorse.name");
@@ -271,32 +323,46 @@ final class Tooltip {
             case EFFECT_LIMIT:
                 entityName = StatCollector.translateToLocal("entity.Witch.name");
                 if (PreviewSample.EFFECTS.enabled()) {
-                    tooltip.effects = VanillaEntityDetails.effectLines(Arrays.asList(new PotionEffect(Potion.moveSpeed.id, 800, 1),
-                            new PotionEffect(Potion.damageBoost.id, 950), new PotionEffect(Potion.regeneration.id, 360),
-                            new PotionEffect(Potion.fireResistance.id, 1800), new PotionEffect(Potion.waterBreathing.id, 620),
-                            new PotionEffect(Potion.invisibility.id, 2400), new PotionEffect(Potion.nightVision.id, 900),
-                            new PotionEffect(Potion.jump.id, 340), new PotionEffect(Potion.resistance.id, 650),
-                            new PotionEffect(Potion.digSpeed.id, 400), new PotionEffect(Potion.wither.id, 200),
-                            new PotionEffect(Potion.weakness.id, 580)));
+                    tooltip.effects =
+                            VanillaEntityDetails.effectLines(
+                                    Arrays.asList(
+                                            new PotionEffect(Potion.moveSpeed.id, 800, 1),
+                                            new PotionEffect(Potion.damageBoost.id, 950),
+                                            new PotionEffect(Potion.regeneration.id, 360),
+                                            new PotionEffect(Potion.fireResistance.id, 1800),
+                                            new PotionEffect(Potion.waterBreathing.id, 620),
+                                            new PotionEffect(Potion.invisibility.id, 2400),
+                                            new PotionEffect(Potion.nightVision.id, 900),
+                                            new PotionEffect(Potion.jump.id, 340),
+                                            new PotionEffect(Potion.resistance.id, 650),
+                                            new PotionEffect(Potion.digSpeed.id, 400),
+                                            new PotionEffect(Potion.wither.id, 200),
+                                            new PotionEffect(Potion.weakness.id, 580)));
                 }
                 break;
             case ITEM_FRAME:
                 tooltip.icon = new ItemStack(Item.itemFrame);
-                if (sample.enabled()) VanillaEntityDetails.setDisplayedItem(tooltip, new ItemStack(Item.appleRed));
+                if (sample.enabled())
+                    VanillaEntityDetails.setDisplayedItem(tooltip, new ItemStack(Item.appleRed));
                 break;
             case DROPPED_ITEM:
                 entityName = StatCollector.translateToLocal("entity.Item.name");
                 if (sample.enabled()) {
                     tooltip.icon = new ItemStack(Item.diamond, 4);
                     entityName = tooltip.icon.getDisplayName();
-                    entityDetails.add(StatCollector.translateToLocalFormatted("iaspis.entity.count", 4));
-                    entityDetails.add(VanillaEntityDetails.timed("iaspis.entity.despawn", 3500 - millis % 3400 / 50));
+                    entityDetails.add(
+                            StatCollector.translateToLocalFormatted("iaspis.entity.count", 4));
+                    entityDetails.add(
+                            VanillaEntityDetails.timed(
+                                    "iaspis.entity.despawn", 3500 - millis % 3400 / 50));
                 }
                 break;
             case NARRATION:
                 tooltip.icon = new ItemStack(Block.chest);
                 if (sample.enabled()) {
-                    detail = StatCollector.translateToLocalFormatted("iaspis.narration.example", tooltip.icon.getDisplayName());
+                    detail =
+                            StatCollector.translateToLocalFormatted(
+                                    "iaspis.narration.example", tooltip.icon.getDisplayName());
                 }
                 break;
             case BOSS_BAR:
@@ -316,18 +382,28 @@ final class Tooltip {
             case INVENTORY_COLUMNS:
             case INVENTORY_SORT:
                 tooltip.icon = new ItemStack(Block.chest);
-                showMoreItems = sample == PreviewSample.INVENTORY_DETAILS || sample == PreviewSample.INVENTORY_COLUMNS
-                        || sample == PreviewSample.AUTO_SCALE;
+                showMoreItems =
+                        sample == PreviewSample.INVENTORY_DETAILS
+                                || sample == PreviewSample.INVENTORY_COLUMNS
+                                || sample == PreviewSample.AUTO_SCALE;
                 exampleInventory = exampleInventory();
                 break;
             default:
                 boolean alternate = sample == PreviewSample.ANIMATION && millis % 2300 >= 1150;
                 tooltip.icon = new ItemStack(alternate ? Block.stone : Block.chest);
-                boolean compact = sample == PreviewSample.MODE && HudSettings.NumberOption.MODE.get() == HudSettings.LITE
-                        && millis % 2400 < 1400;
-                if (!alternate && !compact && (sample != PreviewSample.INVENTORY || Iaspis.config().getBoolean(sample.key))) {
-                    exampleInventory = Arrays.asList(new ItemStack(Item.appleRed, 3),
-                            new ItemStack(Block.planks, 12), new ItemStack(Item.ingotIron, 2));
+                boolean compact =
+                        sample == PreviewSample.MODE
+                                && HudSettings.NumberOption.MODE.get() == HudSettings.LITE
+                                && millis % 2400 < 1400;
+                if (!alternate
+                        && !compact
+                        && (sample != PreviewSample.INVENTORY
+                                || Iaspis.config().getBoolean(sample.key))) {
+                    exampleInventory =
+                            Arrays.asList(
+                                    new ItemStack(Item.appleRed, 3),
+                                    new ItemStack(Block.planks, 12),
+                                    new ItemStack(Item.ingotIron, 2));
                 }
                 break;
         }
@@ -357,21 +433,30 @@ final class Tooltip {
     }
 
     static String tankLabel(TankPreview tank) {
-        String name = tank.fluid == null ? StatCollector.translateToLocal(
-                tank.amount == 0 ? "iaspis.tank.empty" : "iaspis.tank.unknown") : fluidName(tank.fluid);
-        return StatCollector.translateToLocalFormatted("iaspis.tank.amount", name, tank.amount, tank.capacity);
+        String name =
+                tank.fluid == null
+                        ? StatCollector.translateToLocal(
+                                tank.amount == 0 ? "iaspis.tank.empty" : "iaspis.tank.unknown")
+                        : fluidName(tank.fluid);
+        return StatCollector.translateToLocalFormatted(
+                "iaspis.tank.amount", name, tank.amount, tank.capacity);
     }
 
     static String energyLabel(MachinePreview energy) {
         NumberFormat quantities = NumberFormat.getNumberInstance();
         quantities.setMaximumFractionDigits(2);
-        return StatCollector.translateToLocalFormatted("iaspis.machine.energyAmount",
-                quantities.format(energy.stored), quantities.format(energy.capacity), energy.unit.name());
+        return StatCollector.translateToLocalFormatted(
+                "iaspis.machine.energyAmount",
+                quantities.format(energy.stored),
+                quantities.format(energy.capacity),
+                energy.unit.name());
     }
 
     private static String energyLimit(String key, double value, MachinePreview.EnergyUnit unit) {
-        NumberFormat quantities=NumberFormat.getNumberInstance();quantities.setMaximumFractionDigits(2);
-        return StatCollector.translateToLocalFormatted("iaspis.machine."+key,quantities.format(value),unit.name());
+        NumberFormat quantities = NumberFormat.getNumberInstance();
+        quantities.setMaximumFractionDigits(2);
+        return StatCollector.translateToLocalFormatted(
+                "iaspis.machine." + key, quantities.format(value), unit.name());
     }
 
     private static String fluidName(Fluid fluid) {
@@ -385,7 +470,11 @@ final class Tooltip {
         IWailaBlock direct = block instanceof IWailaBlock ? (IWailaBlock) block : null;
         icon = pickStack(target, direct);
         if (icon == null) fluid = FluidTarget.fluid(block);
-        List<String> head = section(fluid != null ? fluidName(fluid) : VanillaBlockDetails.blockName(block, icon));
+        List<String> head =
+                section(
+                        fluid != null
+                                ? fluidName(fluid)
+                                : VanillaBlockDetails.blockName(block, icon));
         List<String> body = new ArrayList<String>();
         if (!lite) {
             addBlockDetails(target, body);
@@ -395,14 +484,23 @@ final class Tooltip {
             }
         }
         GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(block);
-        List<String> tail = source(id == null ? null : Loader.instance().getIndexedModList().get(id.modId),
-                block.getClass());
+        List<String> tail =
+                source(
+                        id == null ? null : Loader.instance().getIndexedModList().get(id.modId),
+                        block.getClass());
         List<MultipartAccessor> parts = BRIDGE.multipart(target);
-        lines.addAll(multipartSection(Section.HEAD, parts, blockSection(Section.HEAD, target, direct, head)));
+        lines.addAll(
+                multipartSection(
+                        Section.HEAD, parts, blockSection(Section.HEAD, target, direct, head)));
         hasHead = !lines.isEmpty();
-        if (!lite) lines.addAll(multipartSection(Section.BODY, parts, blockSection(Section.BODY, target, direct, body)));
+        if (!lite)
+            lines.addAll(
+                    multipartSection(
+                            Section.BODY, parts, blockSection(Section.BODY, target, direct, body)));
         bodyEnd = lines.size();
-        lines.addAll(multipartSection(Section.TAIL, parts, blockSection(Section.TAIL, target, direct, tail)));
+        lines.addAll(
+                multipartSection(
+                        Section.TAIL, parts, blockSection(Section.TAIL, target, direct, tail)));
     }
 
     private void applyHarvest(HarvestHint hint, List<String> lines, Target target) {
@@ -423,16 +521,24 @@ final class Tooltip {
         }
     }
 
-    private List<String> multipartSection(Section section, List<MultipartAccessor> parts, List<String> lines) {
+    private List<String> multipartSection(
+            Section section, List<MultipartAccessor> parts, List<String> lines) {
         for (MultipartAccessor part : parts) {
             for (IWailaFMPProvider provider : BRIDGE.multipartProviders(section, part.getID())) {
                 try {
                     List<String> updated;
                     switch (section) {
-                        case HEAD: updated = provider.getWailaHead(icon, lines, part, BRIDGE); break;
-                        case BODY: updated = provider.getWailaBody(icon, lines, part, BRIDGE); break;
-                        case TAIL: updated = provider.getWailaTail(icon, lines, part, BRIDGE); break;
-                        default: throw new AssertionError(section);
+                        case HEAD:
+                            updated = provider.getWailaHead(icon, lines, part, BRIDGE);
+                            break;
+                        case BODY:
+                            updated = provider.getWailaBody(icon, lines, part, BRIDGE);
+                            break;
+                        case TAIL:
+                            updated = provider.getWailaTail(icon, lines, part, BRIDGE);
+                            break;
+                        default:
+                            throw new AssertionError(section);
                     }
                     lines = keep(updated, lines);
                 } catch (RuntimeException e) {
@@ -469,14 +575,19 @@ final class Tooltip {
         return target.getStack();
     }
 
-    private List<String> blockSection(Section part, Target target, IWailaBlock direct, List<String> lines) {
+    private List<String> blockSection(
+            Section part, Target target, IWailaBlock direct, List<String> lines) {
         if (direct != null) {
             try {
                 switch (part) {
-                    case HEAD: return keep(direct.getWailaHead(icon, lines, target, BRIDGE), lines);
-                    case BODY: return keep(direct.getWailaBody(icon, lines, target, BRIDGE), lines);
-                    case TAIL: return keep(direct.getWailaTail(icon, lines, target, BRIDGE), lines);
-                    default: throw new AssertionError(part);
+                    case HEAD:
+                        return keep(direct.getWailaHead(icon, lines, target, BRIDGE), lines);
+                    case BODY:
+                        return keep(direct.getWailaBody(icon, lines, target, BRIDGE), lines);
+                    case TAIL:
+                        return keep(direct.getWailaTail(icon, lines, target, BRIDGE), lines);
+                    default:
+                        throw new AssertionError(part);
                 }
             } catch (RuntimeException e) {
                 BRIDGE.report(direct.getClass().getName(), e);
@@ -488,10 +599,17 @@ final class Tooltip {
             try {
                 List<String> result;
                 switch (part) {
-                    case HEAD: result = provider.getWailaHead(icon, lines, target, BRIDGE); break;
-                    case BODY: result = provider.getWailaBody(icon, lines, target, BRIDGE); break;
-                    case TAIL: result = provider.getWailaTail(icon, lines, target, BRIDGE); break;
-                    default: throw new AssertionError(part);
+                    case HEAD:
+                        result = provider.getWailaHead(icon, lines, target, BRIDGE);
+                        break;
+                    case BODY:
+                        result = provider.getWailaBody(icon, lines, target, BRIDGE);
+                        break;
+                    case TAIL:
+                        result = provider.getWailaTail(icon, lines, target, BRIDGE);
+                        break;
+                    default:
+                        throw new AssertionError(part);
                 }
                 lines = keep(result, lines);
             } catch (RuntimeException e) {
@@ -514,8 +632,10 @@ final class Tooltip {
     }
 
     private static String cropProgress(int age, int stages) {
-        return age >= stages ? "\u00a7a" + StatCollector.translateToLocal("iaspis.growth.mature")
-                : StatCollector.translateToLocalFormatted("iaspis.growth", Math.round(age * 100.0F / stages));
+        return age >= stages
+                ? "\u00a7a" + StatCollector.translateToLocal("iaspis.growth.mature")
+                : StatCollector.translateToLocalFormatted(
+                        "iaspis.growth", Math.round(age * 100.0F / stages));
     }
 
     private void buildEntity(Target target, boolean lite) {
@@ -543,26 +663,41 @@ final class Tooltip {
             }
             if (Iaspis.config().getBoolean("armor.enabled")) armor = living.getTotalArmorValue();
         }
-        EntityRegistry.EntityRegistration registration = EntityRegistry.instance().lookupModSpawn(entity.getClass(), true);
+        EntityRegistry.EntityRegistration registration =
+                EntityRegistry.instance().lookupModSpawn(entity.getClass(), true);
         if (!lite) VanillaEntityDetails.append(target, entity, this, body);
         String name = VanillaEntityDetails.name(entity, icon);
         lines.addAll(entitySection(Section.HEAD, target, entity, section(name)));
         hasHead = !lines.isEmpty();
         if (!lite) lines.addAll(entitySection(Section.BODY, target, entity, body));
         bodyEnd = lines.size();
-        lines.addAll(entitySection(Section.TAIL, target, entity,
-                source(registration == null ? null : registration.getContainer(), entity.getClass())));
+        lines.addAll(
+                entitySection(
+                        Section.TAIL,
+                        target,
+                        entity,
+                        source(
+                                registration == null ? null : registration.getContainer(),
+                                entity.getClass())));
     }
 
-    private List<String> entitySection(Section part, Target target, Entity entity, List<String> lines) {
+    private List<String> entitySection(
+            Section part, Target target, Entity entity, List<String> lines) {
         for (IWailaEntityProvider provider : BRIDGE.entities(part, target)) {
             try {
                 List<String> result;
                 switch (part) {
-                    case HEAD: result = provider.getWailaHead(entity, lines, target, BRIDGE); break;
-                    case BODY: result = provider.getWailaBody(entity, lines, target, BRIDGE); break;
-                    case TAIL: result = provider.getWailaTail(entity, lines, target, BRIDGE); break;
-                    default: throw new AssertionError(part);
+                    case HEAD:
+                        result = provider.getWailaHead(entity, lines, target, BRIDGE);
+                        break;
+                    case BODY:
+                        result = provider.getWailaBody(entity, lines, target, BRIDGE);
+                        break;
+                    case TAIL:
+                        result = provider.getWailaTail(entity, lines, target, BRIDGE);
+                        break;
+                    default:
+                        throw new AssertionError(part);
                 }
                 lines = keep(result, lines);
             } catch (RuntimeException e) {

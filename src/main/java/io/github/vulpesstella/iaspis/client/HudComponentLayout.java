@@ -1,10 +1,9 @@
 package io.github.vulpesstella.iaspis.client;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.github.vulpesstella.iaspis.api.HudComponent;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.gui.FontRenderer;
 
 final class HudComponentLayout {
@@ -54,7 +53,8 @@ final class HudComponentLayout {
     }
 
     private static void report(String phase, HudComponent component, Throwable error) {
-        WailaBridge.INSTANCE.report("Iaspis HUD component " + phase + ": " + component.getClass().getName(), error);
+        WailaBridge.INSTANCE.report(
+                "Iaspis HUD component " + phase + ": " + component.getClass().getName(), error);
     }
 
     private static final class Row {

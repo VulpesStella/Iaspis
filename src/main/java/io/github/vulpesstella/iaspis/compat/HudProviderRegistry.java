@@ -1,12 +1,5 @@
 package io.github.vulpesstella.iaspis.compat;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.api.HudComponent;
@@ -14,6 +7,12 @@ import io.github.vulpesstella.iaspis.api.HudProviders;
 import io.github.vulpesstella.iaspis.api.HudTarget;
 import io.github.vulpesstella.iaspis.api.MultipartPart;
 import io.github.vulpesstella.iaspis.api.MultipartTarget;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.item.ItemStack;
 
 public final class HudProviderRegistry {
@@ -26,25 +25,31 @@ public final class HudProviderRegistry {
         if (!SETTINGS.containsKey(id)) SETTINGS.put(id, label);
     }
 
-    public static synchronized void register(String id, String label, Class<?> type, int priority, HudProviders.Provider provider) {
-        if (type == null || provider == null) throw new NullPointerException("HUD target type and provider are required");
+    public static synchronized void register(
+            String id, String label, Class<?> type, int priority, HudProviders.Provider provider) {
+        if (type == null || provider == null)
+            throw new NullPointerException("HUD target type and provider are required");
         add(id, label, type, priority, provider);
     }
 
-    public static synchronized void registerMultipart(String id, String label, String type, int priority, HudProviders.Provider provider) {
+    public static synchronized void registerMultipart(
+            String id, String label, String type, int priority, HudProviders.Provider provider) {
         if (provider == null) throw new NullPointerException("A HUD provider is required");
         add(id, label, type, priority, provider);
     }
 
-    private static void add(String id, String label, Object type, int priority, HudProviders.Provider provider) {
+    private static void add(
+            String id, String label, Object type, int priority, HudProviders.Provider provider) {
         List<Registration> updated = new ArrayList<Registration>(registrations);
         updated.add(new Registration(id, type, priority, provider));
-        Collections.sort(updated, new Comparator<Registration>() {
-            @Override
-            public int compare(Registration a, Registration b) {
-                return Integer.compare(b.priority, a.priority);
-            }
-        });
+        Collections.sort(
+                updated,
+                new Comparator<Registration>() {
+                    @Override
+                    public int compare(Registration a, Registration b) {
+                        return Integer.compare(b.priority, a.priority);
+                    }
+                });
         registrations = updated;
         if (id != null && !SETTINGS.containsKey(id)) SETTINGS.put(id, label);
     }
@@ -83,7 +88,8 @@ public final class HudProviderRegistry {
     }
 
     private static void report(Registration registration, Throwable error) {
-        WailaBridge.INSTANCE.report("Iaspis HUD provider " + registration.provider.getClass().getName(), error);
+        WailaBridge.INSTANCE.report(
+                "Iaspis HUD provider " + registration.provider.getClass().getName(), error);
     }
 
     private static final class Registration {
@@ -100,11 +106,16 @@ public final class HudProviderRegistry {
         }
 
         boolean matches(HudTarget target) {
-            MultipartPart part = target instanceof MultipartTarget ? ((MultipartTarget) target).getMultipartPart() : null;
+            MultipartPart part =
+                    target instanceof MultipartTarget
+                            ? ((MultipartTarget) target).getMultipartPart()
+                            : null;
             if (type instanceof String) return part != null && type.equals(part.getType());
             Class<?> targetType = (Class<?>) type;
-            return targetType.isInstance(target.getBlock()) || targetType.isInstance(target.getTileEntity())
-                    || targetType.isInstance(target.getEntity()) || (part != null && targetType.isInstance(part.getPart()));
+            return targetType.isInstance(target.getBlock())
+                    || targetType.isInstance(target.getTileEntity())
+                    || targetType.isInstance(target.getEntity())
+                    || (part != null && targetType.isInstance(part.getPart()));
         }
     }
 
@@ -116,7 +127,9 @@ public final class HudProviderRegistry {
         public boolean hidden;
 
         @Override
-        public void setName(String name) { this.name = name; }
+        public void setName(String name) {
+            this.name = name;
+        }
 
         @Override
         public void setIcon(ItemStack icon) {
@@ -134,6 +147,8 @@ public final class HudProviderRegistry {
         }
 
         @Override
-        public void hide() { hidden = true; }
+        public void hide() {
+            hidden = true;
+        }
     }
 }

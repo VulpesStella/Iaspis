@@ -44,7 +44,7 @@ enum PreviewSample {
     HEALTH_COLUMNS("health.columns"),
     HEALTH_FRACTION("health.fraction", false),
     ARMOR_LIMIT("armor.iconLimit"),
-BREAKING("breaking.enabled"),
+    BREAKING("breaking.enabled"),
     FLUID_TARGET("fluid.target"),
     TANK(IaspisConfig.TANK_DISPLAY),
     TANK_BAR("tank.bar"),
@@ -80,20 +80,25 @@ BREAKING("breaking.enabled"),
         return Iaspis.config().getBoolean(key, defaultEnabled);
     }
 
-    int buttonId() { return ordinal() - 1; }
+    int buttonId() {
+        return ordinal() - 1;
+    }
 
     static PreviewSample forButton(int id) {
         return values()[id + 1];
     }
 
     boolean visible(long millis) {
-        if (this == VISIBILITY || this == BLOCKS || this == ENTITIES || this == BOSSES) return enabled();
+        if (this == VISIBILITY || this == BLOCKS || this == ENTITIES || this == BOSSES)
+            return enabled();
         if (this == FLUID_TARGET) {
             int mode = HudSettings.NumberOption.FLUID_TARGET.get();
             return mode == FluidTarget.ALL || (mode == FluidTarget.SOURCE && millis % 3200 < 1600);
         }
         if (this == TAB_LIST) return !enabled() || millis % 2800 < 1400;
         if (this == LINGER) return millis % 3600 < 1250 + HudSettings.NumberOption.LINGER.get();
-        return this != MODE || HudSettings.NumberOption.MODE.get() != HudSettings.HOLD || millis % 2600 < 1800;
+        return this != MODE
+                || HudSettings.NumberOption.MODE.get() != HudSettings.HOLD
+                || millis % 2600 < 1800;
     }
 }

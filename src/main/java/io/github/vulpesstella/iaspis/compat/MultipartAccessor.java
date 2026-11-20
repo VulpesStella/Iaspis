@@ -19,14 +19,43 @@ public final class MultipartAccessor implements IWailaFMPAccessor {
         this.part = part;
     }
 
-    public World getWorld() { return target.getWorld(); }
-    public EntityPlayer getPlayer() { return target.getPlayer(); }
-    public TileEntity getTileEntity() { return target.getTileEntity(); }
-    public MovingObjectPosition getPosition() { return target.getPosition(); }
-    public NBTTagCompound getNBTData() { return part; }
-    public NBTTagCompound getFullNBTData() { return target.getNBTData(); }
-    public int getNBTInteger(NBTTagCompound tag, String key) { return target.getNBTInteger(tag, key); }
-    public double getPartialFrame() { return target.getPartialFrame(); }
-    public Vec3 getRenderingPosition() { return target.getRenderingPosition(); }
-    public String getID() { return id; }
+    public World getWorld() {
+        return target.getWorld();
+    }
+
+    public EntityPlayer getPlayer() {
+        return target.getPlayer();
+    }
+
+    public TileEntity getTileEntity() {
+        return target.getTileEntity();
+    }
+
+    public MovingObjectPosition getPosition() {
+        return target.getPosition();
+    }
+
+    public NBTTagCompound getNBTData() {
+        return part;
+    }
+
+    public NBTTagCompound getFullNBTData() {
+        return target.getNBTData();
+    }
+
+    public int getNBTInteger(NBTTagCompound tag, String key) {
+        return target.getNBTInteger(tag, key);
+    }
+
+    public double getPartialFrame() {
+        return target.getPartialFrame();
+    }
+
+    public Vec3 getRenderingPosition() {
+        return target.getRenderingPosition();
+    }
+
+    public String getID() {
+        return id;
+    }
 }

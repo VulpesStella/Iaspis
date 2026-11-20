@@ -10,14 +10,18 @@ public final class DetailProviders {
         NBTTagCompound read(HudTarget target);
     }
 
-    public static void register(String id, String label, Class<?> type, int priority, Provider provider) {
-        if (type == null || provider == null) throw new NullPointerException("A target type and source are required");
+    public static void register(
+            String id, String label, Class<?> type, int priority, Provider provider) {
+        if (type == null || provider == null)
+            throw new NullPointerException("A target type and source are required");
         HudProviders.registerSetting(id, label);
         DetailRegistry.register(id, type, priority, provider);
     }
 
-    public static void registerMultipart(String id, String label, String partType, int priority, Provider provider) {
-        if (partType == null || partType.isEmpty() || provider == null) throw new IllegalArgumentException("A part type and source are required");
+    public static void registerMultipart(
+            String id, String label, String partType, int priority, Provider provider) {
+        if (partType == null || partType.isEmpty() || provider == null)
+            throw new IllegalArgumentException("A part type and source are required");
         HudProviders.registerSetting(id, label);
         DetailRegistry.register(id, partType, priority, provider);
     }

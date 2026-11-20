@@ -102,6 +102,8 @@ The Retrospectum Loom build uses Java 17 for Gradle, Java 8 for compilation, and
 
 Run `./build.ps1 runClient` or `./build.ps1 runServer` for development launches. On Linux, use `./build.sh` with the same tasks.
 
+Java sources use Google Java Format 1.28.0 in AOSP style (four-space indentation), managed by Spotless 8.10.3. Run `./build.ps1 spotlessApply` to format them or `./build.ps1 spotlessCheck` to check formatting. On Linux, use `./build.sh` with the same tasks. Formatting covers the mod and HUD example sources. `build` and CI enforce the same rules.
+
 ## Acknowledgments
 
 Iaspis is inspired by [Jade](https://github.com/Snownee/Jade). The legacy API declarations come from [WAILA by ProfMobius](https://github.com/Choonster-Minecraft-Mods/ProfMobius-Waila/tree/d6de00542d58c8cadce2e00d27535e7b259c0ea7) and are distributed under the [Apache License 2.0](src/main/resources/WAILA-LICENSE.txt).

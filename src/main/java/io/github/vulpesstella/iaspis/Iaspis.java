@@ -5,8 +5,8 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkMod;
-import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
 import io.github.vulpesstella.iaspis.compat.DetailsChannel;
+import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
 import io.github.vulpesstella.iaspis.compat.WailaOptionsChannel;
 import net.minecraft.tileentity.TileEntityBrewingStand;
@@ -15,15 +15,26 @@ import net.minecraft.tileentity.TileEntityHopper;
 import net.minecraft.tileentity.TileEntityNote;
 import net.minecraft.tileentity.TileEntityRecordPlayer;
 
-@Mod(modid = BuildConstants.MOD_ID, name = BuildConstants.MOD_NAME,
-        version = BuildConstants.MOD_VERSION, acceptedMinecraftVersions = "[1.6.4]")
-@NetworkMod(channels = { TargetDataChannel.NAME, TargetDataChannel.TANK_CAPABILITY,
-        WailaOptionsChannel.NAME, DetailsChannel.NAME }, packetHandler = TargetDataChannel.class,
-        clientSideRequired = false, serverSideRequired = false)
+@Mod(
+        modid = BuildConstants.MOD_ID,
+        name = BuildConstants.MOD_NAME,
+        version = BuildConstants.MOD_VERSION,
+        acceptedMinecraftVersions = "[1.6.4]")
+@NetworkMod(
+        channels = {
+            TargetDataChannel.NAME,
+            TargetDataChannel.TANK_CAPABILITY,
+            WailaOptionsChannel.NAME,
+            DetailsChannel.NAME
+        },
+        packetHandler = TargetDataChannel.class,
+        clientSideRequired = false,
+        serverSideRequired = false)
 public final class Iaspis {
     private static IaspisConfig config;
 
-    @SidedProxy(clientSide = "io.github.vulpesstella.iaspis.client.ClientProxy",
+    @SidedProxy(
+            clientSide = "io.github.vulpesstella.iaspis.client.ClientProxy",
             serverSide = "io.github.vulpesstella.iaspis.CommonProxy")
     public static CommonProxy proxy;
 
@@ -38,7 +49,8 @@ public final class Iaspis {
         WailaBridge.INSTANCE.initialize(event.getModLog());
         WailaBridge.INSTANCE.registerSyncedNBTKey("CookTime", TileEntityFurnace.class);
         WailaBridge.INSTANCE.registerSyncedNBTKey("BrewTime", TileEntityBrewingStand.class);
-        WailaBridge.INSTANCE.registerSyncedNBTKey(TargetDataChannel.HOPPER_LOCKED, TileEntityHopper.class);
+        WailaBridge.INSTANCE.registerSyncedNBTKey(
+                TargetDataChannel.HOPPER_LOCKED, TileEntityHopper.class);
         WailaBridge.INSTANCE.registerSyncedNBTKey("note", TileEntityNote.class);
         WailaBridge.INSTANCE.registerSyncedNBTKey("Record", TileEntityRecordPlayer.class);
     }

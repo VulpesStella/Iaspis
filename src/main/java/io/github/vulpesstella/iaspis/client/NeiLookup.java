@@ -1,9 +1,8 @@
 package io.github.vulpesstella.iaspis.client;
 
-import java.lang.reflect.Method;
-
 import cpw.mods.fml.common.Loader;
 import io.github.vulpesstella.iaspis.compat.WailaBridge;
+import java.lang.reflect.Method;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.item.ItemStack;
@@ -24,7 +23,7 @@ final class NeiLookup {
             Method open = gui.getMethod("openRecipeGui", String.class, Object[].class);
             // The 1.6.4 recipe views require an inventory screen to return to.
             game.displayGuiScreen(new GuiInventory(game.thePlayer));
-            if (Boolean.TRUE.equals(open.invoke(null, "item", new Object[] { stack.copy() }))) return;
+            if (Boolean.TRUE.equals(open.invoke(null, "item", new Object[] {stack.copy()}))) return;
             game.displayGuiScreen(null);
             message(game, "iaspis.nei.noResults");
         } catch (ReflectiveOperationException e) {

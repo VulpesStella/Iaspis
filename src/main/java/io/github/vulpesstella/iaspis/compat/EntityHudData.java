@@ -30,7 +30,8 @@ public final class EntityHudData {
             NBTTagList effects = new NBTTagList();
             for (Object entry : ((EntityLivingBase) entity).getActivePotionEffects()) {
                 if (effects.tagCount() == MAX_EFFECTS) break;
-                effects.appendTag(((PotionEffect) entry).writeCustomPotionEffectToNBT(new NBTTagCompound()));
+                effects.appendTag(
+                        ((PotionEffect) entry).writeCustomPotionEffectToNBT(new NBTTagCompound()));
             }
             data.setTag(EFFECTS, effects);
         }

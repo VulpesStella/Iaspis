@@ -1,14 +1,13 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.api.MachineProjections;
+import io.github.vulpesstella.iaspis.api.MachineTarget;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
+import io.github.vulpesstella.iaspis.api.MultipartTarget;
+import io.github.vulpesstella.iaspis.api.SnapshotTarget;
 import java.util.Collections;
 import java.util.List;
-
-import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.api.MultipartTarget;
-import io.github.vulpesstella.iaspis.api.MultipartPart;
-import io.github.vulpesstella.iaspis.api.SnapshotTarget;
-import io.github.vulpesstella.iaspis.api.MachineTarget;
-import io.github.vulpesstella.iaspis.api.MachineProjections;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaEntityAccessor;
 import net.minecraft.block.Block;
@@ -27,7 +26,12 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
 
-public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, MultipartTarget, SnapshotTarget, MachineTarget {
+public final class Target
+        implements IWailaDataAccessor,
+                IWailaEntityAccessor,
+                MultipartTarget,
+                SnapshotTarget,
+                MachineTarget {
     private final World world;
     private final EntityPlayer player;
     private final MovingObjectPosition hit;
@@ -48,8 +52,13 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
     private String machineId;
     private NBTTagCompound snapshots;
 
-    public MachinePreview getMachinePreview() { return MachineProjections.project(this, machineId, machine); }
-    public String getMachineProviderId() { return machineId; }
+    public MachinePreview getMachinePreview() {
+        return MachineProjections.project(this, machineId, machine);
+    }
+
+    public String getMachineProviderId() {
+        return machineId;
+    }
 
     public void setMachinePreview(MachinePreview machine) {
         setMachinePreview(null, machine);
@@ -60,24 +69,41 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
         this.machine = machine;
     }
 
-    public void setSnapshots(NBTTagCompound snapshots) { this.snapshots = snapshots; }
-    public NBTTagCompound getSnapshot(String id) {
-        return snapshots == null || !snapshots.hasKey(id) ? null : (NBTTagCompound) snapshots.getCompoundTag(id).copy();
+    public void setSnapshots(NBTTagCompound snapshots) {
+        this.snapshots = snapshots;
     }
 
-    public List<TankPreview> getTankPreview() { return tanks; }
+    public NBTTagCompound getSnapshot(String id) {
+        return snapshots == null || !snapshots.hasKey(id)
+                ? null
+                : (NBTTagCompound) snapshots.getCompoundTag(id).copy();
+    }
 
-    public void setTankPreview(List<TankPreview> tanks) { this.tanks = tanks; }
+    public List<TankPreview> getTankPreview() {
+        return tanks;
+    }
 
-    public Target(World world, EntityPlayer player, Entity camera, MovingObjectPosition hit,
-                  double partialTicks, ItemStack stack) {
+    public void setTankPreview(List<TankPreview> tanks) {
+        this.tanks = tanks;
+    }
+
+    public Target(
+            World world,
+            EntityPlayer player,
+            Entity camera,
+            MovingObjectPosition hit,
+            double partialTicks,
+            ItemStack stack) {
         this.world = world;
         this.player = player;
         this.hit = hit;
         this.partialTicks = partialTicks;
         this.stack = stack;
         boolean isBlock = hit.typeOfHit == EnumMovingObjectType.TILE;
-        block = isBlock ? Block.blocksList[world.getBlockId(hit.blockX, hit.blockY, hit.blockZ)] : null;
+        block =
+                isBlock
+                        ? Block.blocksList[world.getBlockId(hit.blockX, hit.blockY, hit.blockZ)]
+                        : null;
         tile = isBlock ? world.getBlockTileEntity(hit.blockX, hit.blockY, hit.blockZ) : null;
         metadata = isBlock ? world.getBlockMetadata(hit.blockX, hit.blockY, hit.blockZ) : 0;
         part = MultipartResolver.resolve(tile, hit);
@@ -85,25 +111,70 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
         double x = entity == null ? hit.blockX : entity.posX;
         double y = entity == null ? hit.blockY : entity.posY;
         double z = entity == null ? hit.blockZ : entity.posZ;
-        renderPosition = Vec3.createVectorHelper(
-                x - (camera.lastTickPosX + (camera.posX - camera.lastTickPosX) * partialTicks),
-                y - (camera.lastTickPosY + (camera.posY - camera.lastTickPosY) * partialTicks),
-                z - (camera.lastTickPosZ + (camera.posZ - camera.lastTickPosZ) * partialTicks));
+        renderPosition =
+                Vec3.createVectorHelper(
+                        x
+                                - (camera.lastTickPosX
+                                        + (camera.posX - camera.lastTickPosX) * partialTicks),
+                        y
+                                - (camera.lastTickPosY
+                                        + (camera.posY - camera.lastTickPosY) * partialTicks),
+                        z
+                                - (camera.lastTickPosZ
+                                        + (camera.posZ - camera.lastTickPosZ) * partialTicks));
     }
 
-    public World getWorld() { return world; }
-    public EntityPlayer getPlayer() { return player; }
-    public MovingObjectPosition getPosition() { return hit; }
-    public Vec3 getRenderingPosition() { return renderPosition; }
-    public double getPartialFrame() { return partialTicks; }
-    public ForgeDirection getSide() { return ForgeDirection.getOrientation(hit.sideHit); }
-    public Block getBlock() { return block; }
-    public int getBlockID() { return block == null ? 0 : block.blockID; }
-    public int getMetadata() { return metadata; }
-    public TileEntity getTileEntity() { return tile; }
-    public Entity getEntity() { return hit.entityHit; }
-    public ItemStack getStack() { return stack; }
-    public MultipartPart getMultipartPart() { return part; }
+    public World getWorld() {
+        return world;
+    }
+
+    public EntityPlayer getPlayer() {
+        return player;
+    }
+
+    public MovingObjectPosition getPosition() {
+        return hit;
+    }
+
+    public Vec3 getRenderingPosition() {
+        return renderPosition;
+    }
+
+    public double getPartialFrame() {
+        return partialTicks;
+    }
+
+    public ForgeDirection getSide() {
+        return ForgeDirection.getOrientation(hit.sideHit);
+    }
+
+    public Block getBlock() {
+        return block;
+    }
+
+    public int getBlockID() {
+        return block == null ? 0 : block.blockID;
+    }
+
+    public int getMetadata() {
+        return metadata;
+    }
+
+    public TileEntity getTileEntity() {
+        return tile;
+    }
+
+    public Entity getEntity() {
+        return hit.entityHit;
+    }
+
+    public ItemStack getStack() {
+        return stack;
+    }
+
+    public MultipartPart getMultipartPart() {
+        return part;
+    }
 
     /** Generic capabilities belong to the selected part, never its aggregate container. */
     public Object getPreviewSource() {
@@ -126,7 +197,9 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
         remoteNbt = true;
     }
 
-    public NBTTagCompound getRemoteData() { return remoteNbt ? nbt : null; }
+    public NBTTagCompound getRemoteData() {
+        return remoteNbt ? nbt : null;
+    }
 
     public void setInventoryPreview(InventoryPreview preview) {
         inventory = preview;

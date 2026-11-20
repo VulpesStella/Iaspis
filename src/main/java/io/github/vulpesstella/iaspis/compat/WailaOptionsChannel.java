@@ -1,5 +1,10 @@
 package io.github.vulpesstella.iaspis.compat;
 
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.common.network.Player;
+import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -7,12 +12,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
-import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.INetworkManager;
@@ -35,10 +34,14 @@ public final class WailaOptionsChannel {
         PacketDispatcher.sendPacketToServer(new Packet250CustomPayload(NAME, new byte[] {REQUEST}));
     }
 
-    static void receive(INetworkManager manager, Packet250CustomPayload packet, Player player) throws IOException {
-        if (packet.data == null || packet.data.length == 0 || packet.data.length > MAX_BYTES) return;
+    static void receive(INetworkManager manager, Packet250CustomPayload packet, Player player)
+            throws IOException {
+        if (packet.data == null || packet.data.length == 0 || packet.data.length > MAX_BYTES)
+            return;
         if (player instanceof EntityPlayerMP) {
-            if (packet.data.length == 1 && packet.data[0] == REQUEST && available((EntityPlayerMP) player)) {
+            if (packet.data.length == 1
+                    && packet.data[0] == REQUEST
+                    && available((EntityPlayerMP) player)) {
                 sendLocks(player);
             }
             return;
@@ -53,7 +56,8 @@ public final class WailaOptionsChannel {
         DisplayMode[] modes = DisplayMode.values();
         for (int i = 0; i < size; i++) {
             String key = data.readUTF();
-            if (key.isEmpty() || key.length() > MAX_KEY_LENGTH) throw new IOException("Invalid extension option key");
+            if (key.isEmpty() || key.length() > MAX_KEY_LENGTH)
+                throw new IOException("Invalid extension option key");
             int value = data.readUnsignedByte();
             if (type == WAILA_LOCKS) {
                 waila.put(key, value != 0);
@@ -70,7 +74,8 @@ public final class WailaOptionsChannel {
 
     private static void sendLocks(Player player) throws IOException {
         Map<String, Integer> providers = new LinkedHashMap<String, Integer>();
-        for (Map.Entry<String, DisplayMode> entry : Iaspis.config().lockedHudProviderModes().entrySet()) {
+        for (Map.Entry<String, DisplayMode> entry :
+                Iaspis.config().lockedHudProviderModes().entrySet()) {
             providers.put(entry.getKey(), entry.getValue().ordinal());
         }
         if (!providers.isEmpty()) send(player, HUD_PROVIDER_LOCKS, providers);
@@ -82,7 +87,8 @@ public final class WailaOptionsChannel {
         send(player, WAILA_LOCKS, waila);
     }
 
-    private static void send(Player player, int type, Map<String, Integer> options) throws IOException {
+    private static void send(Player player, int type, Map<String, Integer> options)
+            throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(bytes);
         output.writeByte(type);

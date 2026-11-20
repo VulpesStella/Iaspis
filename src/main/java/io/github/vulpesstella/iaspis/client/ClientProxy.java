@@ -1,19 +1,18 @@
 package io.github.vulpesstella.iaspis.client;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-
 import cpw.mods.fml.client.registry.KeyBindingRegistry;
 import cpw.mods.fml.common.TickType;
 import cpw.mods.fml.common.registry.TickRegistry;
 import cpw.mods.fml.relauncher.Side;
+import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
-import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.nbt.NBTTagCompound;
@@ -27,8 +26,8 @@ public final class ClientProxy extends CommonProxy {
     private RemoteWailaOptions remoteOptions;
 
     @Override
-    public void receiveDetails(INetworkManager manager,int sequence,NBTTagCompound data) {
-        remote.details.receive(manager,sequence,data);
+    public void receiveDetails(INetworkManager manager, int sequence, NBTTagCompound data) {
+        remote.details.receive(manager, sequence, data);
     }
 
     @Override
@@ -45,40 +44,54 @@ public final class ClientProxy extends CommonProxy {
         final Overlay overlay = new Overlay(remote, toggle, details);
         MinecraftForge.EVENT_BUS.register(overlay);
         final KeyBinding settingsKey = settings;
-        KeyBindingRegistry.registerKeyBinding(new KeyBindingRegistry.KeyHandler(
-                new KeyBinding[] { settings, toggle, fluidKey, details, recipe, uses },
-                new boolean[] { false, false, false, false, false, false }) {
-            @Override
-            public void keyDown(EnumSet<TickType> types, KeyBinding key, boolean end, boolean repeat) {
-                Minecraft game = Minecraft.getMinecraft();
-                if (!end || game.currentScreen != null) return;
-                if (key == settingsKey) game.displayGuiScreen(new HudSettingsScreen(overlay));
-                else if (key == fluidKey) {
-                    HudSettings.NumberOption mode = HudSettings.NumberOption.FLUID_TARGET;
-                    mode.set((mode.get() + 1) % (mode.max + 1));
-                    Iaspis.config().save();
-                    if (game.thePlayer != null) {
-                        game.thePlayer.addChatMessage(StatCollector.translateToLocalFormatted(
-                                "iaspis.fluid.changed", StatCollector.translateToLocal(
-                                        "iaspis.settings.fluid.target." + mode.get())));
+        KeyBindingRegistry.registerKeyBinding(
+                new KeyBindingRegistry.KeyHandler(
+                        new KeyBinding[] {settings, toggle, fluidKey, details, recipe, uses},
+                        new boolean[] {false, false, false, false, false, false}) {
+                    @Override
+                    public void keyDown(
+                            EnumSet<TickType> types, KeyBinding key, boolean end, boolean repeat) {
+                        Minecraft game = Minecraft.getMinecraft();
+                        if (!end || game.currentScreen != null) return;
+                        if (key == settingsKey)
+                            game.displayGuiScreen(new HudSettingsScreen(overlay));
+                        else if (key == fluidKey) {
+                            HudSettings.NumberOption mode = HudSettings.NumberOption.FLUID_TARGET;
+                            mode.set((mode.get() + 1) % (mode.max + 1));
+                            Iaspis.config().save();
+                            if (game.thePlayer != null) {
+                                game.thePlayer.addChatMessage(
+                                        StatCollector.translateToLocalFormatted(
+                                                "iaspis.fluid.changed",
+                                                StatCollector.translateToLocal(
+                                                        "iaspis.settings.fluid.target."
+                                                                + mode.get())));
+                            }
+                        } else if (key == recipe || key == uses) {
+                            NeiLookup.open(game, overlay, key == uses);
+                        } else if (key == toggle
+                                && HudSettings.NumberOption.MODE.get() != HudSettings.HOLD) {
+                            Iaspis.config()
+                                    .setBoolean(
+                                            "overlay.enabled",
+                                            !Iaspis.config().getBoolean("overlay.enabled"));
+                            Iaspis.config().save();
+                        }
                     }
-                } else if (key == recipe || key == uses) {
-                    NeiLookup.open(game, overlay, key == uses);
-                } else if (key == toggle && HudSettings.NumberOption.MODE.get() != HudSettings.HOLD) {
-                    Iaspis.config().setBoolean("overlay.enabled", !Iaspis.config().getBoolean("overlay.enabled"));
-                    Iaspis.config().save();
-                }
-            }
 
-            @Override
-            public void keyUp(EnumSet<TickType> types, KeyBinding key, boolean end) {}
+                    @Override
+                    public void keyUp(EnumSet<TickType> types, KeyBinding key, boolean end) {}
 
-            @Override
-            public EnumSet<TickType> ticks() { return EnumSet.of(TickType.CLIENT); }
+                    @Override
+                    public EnumSet<TickType> ticks() {
+                        return EnumSet.of(TickType.CLIENT);
+                    }
 
-            @Override
-            public String getLabel() { return "Iaspis"; }
-        });
+                    @Override
+                    public String getLabel() {
+                        return "Iaspis";
+                    }
+                });
     }
 
     @Override
@@ -108,7 +121,11 @@ public final class ClientProxy extends CommonProxy {
     }
 
     @Override
-    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks) {
+    public void receiveTargetData(
+            int sequence,
+            NBTTagCompound data,
+            InventoryPreview inventory,
+            List<TankPreview> tanks) {
         remote.receive(sequence, data, inventory, tanks);
     }
 }

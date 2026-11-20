@@ -11,11 +11,18 @@ import net.minecraft.world.World;
 /** The current client-side HUD target. Treat the returned game objects as read-only. */
 public interface HudTarget {
     World getWorld();
+
     EntityPlayer getPlayer();
+
     MovingObjectPosition getPosition();
+
     Block getBlock();
+
     int getMetadata();
+
     TileEntity getTileEntity();
+
     Entity getEntity();
+
     ItemStack getStack();
 }

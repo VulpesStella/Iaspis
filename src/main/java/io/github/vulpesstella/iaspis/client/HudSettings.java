@@ -29,7 +29,8 @@ final class HudSettings {
         ARMOR_LIMIT("armor.iconLimit", 20, 0, 200, ""),
         FLUID_TARGET("fluid.target", FluidTarget.OFF, FluidTarget.ALL),
         EFFECT_LIMIT("vanilla.effectLimit", 5, 0, 12, ""),
-        TANK_DISPLAY(IaspisConfig.TANK_DISPLAY, DisplayMode.ON.ordinal(), DisplayMode.DETAILS.ordinal());
+        TANK_DISPLAY(
+                IaspisConfig.TANK_DISPLAY, DisplayMode.ON.ordinal(), DisplayMode.DETAILS.ordinal());
 
         final String key;
         final int fallback;
@@ -50,9 +51,13 @@ final class HudSettings {
             this.unit = unit;
         }
 
-        int get() { return value; }
+        int get() {
+            return value;
+        }
 
-        boolean isSlider() { return unit != null; }
+        boolean isSlider() {
+            return unit != null;
+        }
 
         static NumberOption forKey(String key) {
             for (NumberOption option : values()) {
@@ -80,8 +85,11 @@ final class HudSettings {
 
     static void load() {
         for (NumberOption option : NumberOption.values()) {
-            int fallback = option == NumberOption.BOSS_MODE && !Iaspis.config().getBoolean("overlay.avoidBossBar")
-                    ? BOSS_OVERLAP : option.fallback;
+            int fallback =
+                    option == NumberOption.BOSS_MODE
+                                    && !Iaspis.config().getBoolean("overlay.avoidBossBar")
+                            ? BOSS_OVERLAP
+                            : option.fallback;
             option.value = Iaspis.config().getInt(option.key, fallback, option.min, option.max);
         }
         Iaspis.config().save();

@@ -1,10 +1,9 @@
 package io.github.vulpesstella.iaspis.api;
 
+import io.github.vulpesstella.iaspis.compat.HarvestRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import io.github.vulpesstella.iaspis.compat.HarvestRegistry;
 import net.minecraft.item.ItemStack;
 
 /** Contextual, read-only harvest extensions. Higher priorities run first. */
@@ -25,21 +24,32 @@ public final class HarvestProviders {
 
         public Context(HudTarget target) {
             this.target = target;
-            ItemStack equipped = target.getPlayer() == null ? null : target.getPlayer().getCurrentEquippedItem();
+            ItemStack equipped =
+                    target.getPlayer() == null ? null : target.getPlayer().getCurrentEquippedItem();
             held = equipped == null ? null : equipped.copy();
         }
 
-        public HudTarget getTarget() { return target; }
-        public ItemStack getHeldItem() { return held == null ? null : held.copy(); }
+        public HudTarget getTarget() {
+            return target;
+        }
+
+        public ItemStack getHeldItem() {
+            return held == null ? null : held.copy();
+        }
     }
 
-    /** One tool class with its independent level. Icon is optional for capabilities and requirements. */
+    /**
+     * One tool class with its independent level. Icon is optional for capabilities and
+     * requirements.
+     */
     public static final class Tool {
         public final String toolClass;
         public final int level;
         private final ItemStack icon;
 
-        public Tool(String toolClass, int level) { this(toolClass, level, null); }
+        public Tool(String toolClass, int level) {
+            this(toolClass, level, null);
+        }
 
         public Tool(String toolClass, int level, ItemStack icon) {
             if (toolClass == null || toolClass.isEmpty() || level < -1) {
@@ -50,7 +60,9 @@ public final class HarvestProviders {
             this.icon = icon == null ? null : icon.copy();
         }
 
-        public ItemStack getIcon() { return icon == null ? null : icon.copy(); }
+        public ItemStack getIcon() {
+            return icon == null ? null : icon.copy();
+        }
     }
 
     public static final class Changes {
@@ -60,12 +72,16 @@ public final class HarvestProviders {
         public final Boolean harvestable;
 
         /**
-         * Null means defer. Requirements are alternatives, matched by class AND level.
-         * Empty capabilities represent a held item with no harvest abilities.
-         * Explicit harvestable overrides capability matching and the native Forge result.
-         * Unbreakable blocks and vanilla required-shears targets retain their constraints.
+         * Null means defer. Requirements are alternatives, matched by class AND level. Empty
+         * capabilities represent a held item with no harvest abilities. Explicit harvestable
+         * overrides capability matching and the native Forge result. Unbreakable blocks and vanilla
+         * required-shears targets retain their constraints.
          */
-        public Changes(List<Tool> requirements, Boolean requiresTool, List<Tool> capabilities, Boolean harvestable) {
+        public Changes(
+                List<Tool> requirements,
+                Boolean requiresTool,
+                List<Tool> capabilities,
+                Boolean harvestable) {
             this.requirements = copy(requirements);
             this.requiresTool = requiresTool;
             this.capabilities = copy(capabilities);
@@ -79,8 +95,13 @@ public final class HarvestProviders {
         }
     }
 
-    public static void register(int priority, Provider provider) { HarvestRegistry.register(priority, provider); }
-    public static void registerLevelNames(int priority, LevelNames provider) { HarvestRegistry.registerNames(priority, provider); }
+    public static void register(int priority, Provider provider) {
+        HarvestRegistry.register(priority, provider);
+    }
+
+    public static void registerLevelNames(int priority, LevelNames provider) {
+        HarvestRegistry.registerNames(priority, provider);
+    }
 
     private HarvestProviders() {}
 }

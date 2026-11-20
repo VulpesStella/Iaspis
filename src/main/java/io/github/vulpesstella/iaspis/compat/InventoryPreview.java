@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockChest;
 import net.minecraft.entity.player.EntityPlayer;
@@ -23,8 +22,8 @@ public final class InventoryPreview {
     public static final int DETAIL_LIMIT = 27;
     private static final int SCAN_LIMIT = 4096;
     private static final int FURNACE_SLOT_COUNT = 3;
-    public static final InventoryPreview EMPTY = new InventoryPreview(
-            Collections.<ItemStack>emptyList(), false);
+    public static final InventoryPreview EMPTY =
+            new InventoryPreview(Collections.<ItemStack>emptyList(), false);
 
     public final List<ItemStack> stacks;
     public final boolean truncated;
@@ -34,7 +33,8 @@ public final class InventoryPreview {
         this(stacks, truncated, Collections.<ItemStack>emptyList());
     }
 
-    private InventoryPreview(List<ItemStack> stacks, boolean truncated, List<ItemStack> furnaceSlots) {
+    private InventoryPreview(
+            List<ItemStack> stacks, boolean truncated, List<ItemStack> furnaceSlots) {
         this.stacks = Collections.unmodifiableList(stacks);
         this.truncated = truncated;
         this.furnaceSlots = Collections.unmodifiableList(furnaceSlots);
@@ -47,9 +47,11 @@ public final class InventoryPreview {
         Object source = target.getPreviewSource();
         if (!(source instanceof IInventory) || player == null) return EMPTY;
         World world = player.worldObj;
-        IInventory inventory = source == tile && (block == Block.chest || block == Block.chestTrapped)
-                ? ((BlockChest) block).getInventory(world, tile.xCoord, tile.yCoord, tile.zCoord)
-                : (IInventory) source;
+        IInventory inventory =
+                source == tile && (block == Block.chest || block == Block.chestTrapped)
+                        ? ((BlockChest) block)
+                                .getInventory(world, tile.xCoord, tile.yCoord, tile.zCoord)
+                        : (IInventory) source;
         if (inventory == null || !inventory.isUseableByPlayer(player)) return EMPTY;
 
         List<ItemStack> icons = new ArrayList<ItemStack>();
@@ -57,12 +59,15 @@ public final class InventoryPreview {
         int size = inventory.getSizeInventory();
         for (int i = 0; i < Math.min(size, SCAN_LIMIT); i++) {
             ItemStack stack = previewStack(inventory.getStackInSlot(i));
-            if (source instanceof TileEntityFurnace && i < FURNACE_SLOT_COUNT) furnaceSlots.add(stack);
+            if (source instanceof TileEntityFurnace && i < FURNACE_SLOT_COUNT)
+                furnaceSlots.add(stack);
             if (stack == null) continue;
             if (icons.size() == DETAIL_LIMIT) return new InventoryPreview(icons, true);
             icons.add(stack);
         }
-        return icons.isEmpty() ? EMPTY : new InventoryPreview(icons, size > SCAN_LIMIT, furnaceSlots);
+        return icons.isEmpty()
+                ? EMPTY
+                : new InventoryPreview(icons, size > SCAN_LIMIT, furnaceSlots);
     }
 
     private static ItemStack previewStack(ItemStack stack) {
@@ -115,6 +120,7 @@ public final class InventoryPreview {
         int count = input.readInt();
         int damage = input.readInt();
         return id > 0 && id < Item.itemsList.length && Item.itemsList[id] != null && count > 0
-                ? new ItemStack(id, count, damage) : null;
+                ? new ItemStack(id, count, damage)
+                : null;
     }
 }

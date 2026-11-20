@@ -4,13 +4,14 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import net.minecraftforge.common.Configuration;
 import net.minecraftforge.common.Property;
 
 public final class IaspisConfig {
     public enum DisplayMode {
-        OFF, ON, DETAILS;
+        OFF,
+        ON,
+        DETAILS;
 
         public boolean shows(boolean details) {
             return this == ON || (this == DETAILS && details);
@@ -64,14 +65,17 @@ public final class IaspisConfig {
     }
 
     public DisplayMode getTankDisplay() {
-        return DisplayMode.values()[getInt(TANK_DISPLAY, DisplayMode.ON.ordinal(), 0, DisplayMode.DETAILS.ordinal())];
+        return DisplayMode.values()[
+                getInt(TANK_DISPLAY, DisplayMode.ON.ordinal(), 0, DisplayMode.DETAILS.ordinal())];
     }
 
     public synchronized DisplayMode getHudProviderMode(String id) {
         int fallback = DisplayMode.ON.ordinal();
         if (!file.hasKey(HUD_PROVIDERS, id)) return DisplayMode.ON;
         int value = file.get(HUD_PROVIDERS, id, fallback).getInt(fallback);
-        return value >= 0 && value < DisplayMode.values().length ? DisplayMode.values()[value] : DisplayMode.ON;
+        return value >= 0 && value < DisplayMode.values().length
+                ? DisplayMode.values()[value]
+                : DisplayMode.ON;
     }
 
     public synchronized void setHudProviderMode(String id, DisplayMode mode) {
@@ -83,15 +87,18 @@ public final class IaspisConfig {
         Map<String, DisplayMode> modes = new LinkedHashMap<String, DisplayMode>();
         if (!file.hasCategory(HUD_PROVIDERS_SERVER)) return modes;
         DisplayMode[] displayModes = DisplayMode.values();
-        for (Map.Entry<String, Property> entry : file.getCategory(HUD_PROVIDERS_SERVER).getValues().entrySet()) {
+        for (Map.Entry<String, Property> entry :
+                file.getCategory(HUD_PROVIDERS_SERVER).getValues().entrySet()) {
             int value = entry.getValue().getInt(-1);
-            if (value >= 0 && value < displayModes.length) modes.put(entry.getKey(), displayModes[value]);
+            if (value >= 0 && value < displayModes.length)
+                modes.put(entry.getKey(), displayModes[value]);
         }
         return modes;
     }
 
     public synchronized boolean isWailaOptionLocked(String key) {
-        return file.hasKey("waila_server", key) && file.get("waila_server", key, false).getBoolean(false);
+        return file.hasKey("waila_server", key)
+                && file.get("waila_server", key, false).getBoolean(false);
     }
 
     public synchronized void save() {

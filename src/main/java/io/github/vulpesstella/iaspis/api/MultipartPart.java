@@ -11,7 +11,8 @@ public final class MultipartPart {
 
     public MultipartPart(String type, int index, Object part, NBTTagCompound snapshot) {
         if (type == null || type.isEmpty() || index < 0 || part == null || snapshot == null) {
-            throw new IllegalArgumentException("A multipart selection needs a type, index, instance and snapshot");
+            throw new IllegalArgumentException(
+                    "A multipart selection needs a type, index, instance and snapshot");
         }
         this.type = type;
         this.index = index;
@@ -19,14 +20,28 @@ public final class MultipartPart {
         this.snapshot = (NBTTagCompound) snapshot.copy();
     }
 
-    public String getType() { return type; }
-    public int getIndex() { return index; }
+    public String getType() {
+        return type;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
     /** Read-only game object. Do not retain it across target changes. */
-    public Object getPart() { return part; }
+    public Object getPart() {
+        return part;
+    }
+
     /** Data saved directly by the selected runtime part, independent of tile NBT list order. */
-    public NBTTagCompound getSnapshot() { return (NBTTagCompound) snapshot.copy(); }
+    public NBTTagCompound getSnapshot() {
+        return (NBTTagCompound) snapshot.copy();
+    }
 
     public boolean sameSelection(MultipartPart other) {
-        return other != null && index == other.index && part == other.part && type.equals(other.type);
+        return other != null
+                && index == other.index
+                && part == other.part
+                && type.equals(other.type);
     }
 }

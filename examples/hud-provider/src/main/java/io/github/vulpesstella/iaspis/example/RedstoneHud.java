@@ -15,10 +15,15 @@ final class RedstoneHud {
     private RedstoneHud() {}
 
     static void register() {
-        HudProviders.register(HudExample.ID + ":redstone_signal", "iaspishudexample.redstone",
-                BlockRedstoneWire.class, 0, new HudProviders.Provider() {
+        HudProviders.register(
+                HudExample.ID + ":redstone_signal",
+                "iaspishudexample.redstone",
+                BlockRedstoneWire.class,
+                0,
+                new HudProviders.Provider() {
                     @Override
-                    public void update(HudTarget target, boolean detailed, HudProviders.Tooltip tooltip) {
+                    public void update(
+                            HudTarget target, boolean detailed, HudProviders.Tooltip tooltip) {
                         tooltip.addComponent(new SignalBar(target.getMetadata()));
                     }
                 });
@@ -32,7 +37,9 @@ final class RedstoneHud {
 
         SignalBar(int signal) {
             this.signal = signal;
-            label = StatCollector.translateToLocalFormatted("iaspishudexample.signal", signal, MAX_SIGNAL);
+            label =
+                    StatCollector.translateToLocalFormatted(
+                            "iaspishudexample.signal", signal, MAX_SIGNAL);
         }
 
         @Override

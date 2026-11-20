@@ -5,16 +5,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-
 import net.minecraft.util.StringUtils;
 
 final class TargetNarrator {
     private static final long DELAY = 350000000L;
     private static final String WINDOWS_SPEAK =
             "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Speech; "
-            + "[Console]::InputEncoding=[Text.Encoding]::UTF8; "
-            + "$voice=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-            + "try { $voice.Speak([Console]::In.ReadToEnd()) } finally { $voice.Dispose() }";
+                    + "[Console]::InputEncoding=[Text.Encoding]::UTF8; "
+                    + "$voice=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                    + "try { $voice.Speak([Console]::In.ReadToEnd()) } finally { $voice.Dispose() }";
 
     private final String[][] commands;
     private String target;
@@ -51,10 +50,15 @@ final class TargetNarrator {
         requested = true;
         final int job = generation;
         final String phrase = target.substring(0, Math.min(target.length(), 256));
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() { speak(job, phrase); }
-        }, "Iaspis narrator");
+        Thread worker =
+                new Thread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                speak(job, phrase);
+                            }
+                        },
+                        "Iaspis narrator");
         worker.setDaemon(true);
         worker.start();
     }
@@ -124,14 +128,24 @@ final class TargetNarrator {
     private static String[][] commandsFor(String osName) {
         String os = osName.toLowerCase(Locale.ROOT);
         if (os.startsWith("windows")) {
-            return new String[][] { { "powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive",
-                    "-WindowStyle", "Hidden", "-Command", WINDOWS_SPEAK } };
+            return new String[][] {
+                {
+                    "powershell.exe",
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-WindowStyle",
+                    "Hidden",
+                    "-Command",
+                    WINDOWS_SPEAK
+                }
+            };
         }
         if (os.startsWith("linux")) {
-            return new String[][] { { "espeak-ng", "--stdin" }, { "espeak", "--stdin" } };
+            return new String[][] {{"espeak-ng", "--stdin"}, {"espeak", "--stdin"}};
         }
         if (os.startsWith("mac")) {
-            return new String[][] { { "/usr/bin/say", "-f", "-" } };
+            return new String[][] {{"/usr/bin/say", "-f", "-"}};
         }
         return new String[0][];
     }

@@ -2,7 +2,6 @@ package io.github.vulpesstella.iaspis.client;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-
 import net.minecraft.client.renderer.OpenGlHelper;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;

@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Spotless formatting checks with Google Java Format in four-space AOSP style for mod and HUD example Java sources.
 - Validated server detail snapshots with provider display modes, connection-bound caches, and selected-part request validation, included in extension API 1.
 - Named machine sources with interface matching, shared display settings and server locks, and optional input/output limits per tick.
 - Client energy projections that consistently convert stored energy, capacity and tick limits without modifying server values.

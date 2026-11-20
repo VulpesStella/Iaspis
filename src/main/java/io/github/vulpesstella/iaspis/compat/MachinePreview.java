@@ -2,7 +2,9 @@ package io.github.vulpesstella.iaspis.compat;
 
 public final class MachinePreview {
     public enum EnergyUnit {
-        EU, RF, MJ
+        EU,
+        RF,
+        MJ
     }
 
     public static final MachinePreview EMPTY = new MachinePreview(null, 0, 0, 0);
@@ -11,15 +13,23 @@ public final class MachinePreview {
     public final double stored;
     public final double capacity;
     public final float progress;
+
     /** Native-unit limits per tick, or -1 when unavailable. */
     public final double maxInput;
+
     public final double maxOutput;
 
     public MachinePreview(EnergyUnit unit, double stored, double capacity, float progress) {
         this(unit, stored, capacity, progress, -1, -1);
     }
 
-    public MachinePreview(EnergyUnit unit, double stored, double capacity, float progress, double maxInput, double maxOutput) {
+    public MachinePreview(
+            EnergyUnit unit,
+            double stored,
+            double capacity,
+            float progress,
+            double maxInput,
+            double maxOutput) {
         boolean energy = unit != null && finite(stored) && finite(capacity) && capacity > 0;
         this.unit = energy ? unit : null;
         this.stored = energy ? Math.max(0, stored) : 0;
@@ -36,5 +46,4 @@ public final class MachinePreview {
     private static boolean finite(double value) {
         return !Double.isNaN(value) && !Double.isInfinite(value);
     }
-
 }
