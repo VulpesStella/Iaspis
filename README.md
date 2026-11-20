@@ -1,109 +1,77 @@
 # Iaspis
 
-Iaspis brings Jade-style tooltips to Minecraft 1.6.4. Look at a block or entity to see what it is, which mod it belongs to, and details such as entity health, crop growth, and furnace progress.
+**A Jade-style information HUD for Minecraft 1.6.4.**
 
-Entity health uses full, half, and empty hearts. Armor uses armor icons. Large values use an icon with a compact number, and furnaces show input and fuel slots, a progress arrow, and an output slot.
+![Minecraft 1.6.4](https://img.shields.io/badge/Minecraft-1.6.4-62b47a)
+![Forge 9.11.1.1345](https://img.shields.io/badge/Forge-9.11.1.1345-3b5b8a)
+[![Build mod](https://github.com/VulpesStella/Iaspis/actions/workflows/build.yml/badge.svg)](https://github.com/VulpesStella/Iaspis/actions/workflows/build.yml)
+
+[User guide](docs/USER_GUIDE.md) · [Extension API](docs/EXTENSION_API.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/VulpesStella/Iaspis/issues)
+
+Iaspis shows information about the block or entity under your crosshair. Inspired by [Jade](https://github.com/Snownee/Jade), it brings an illustrated, configurable HUD to Forge 1.6.4 and supports existing WAILA integrations.
+
+## Features
+
+- **Know what you are looking at.** Block and entity names, item icons, and mod names, with precise targeting for ForgeMultipart parts.
+- **Check before you mine.** Tool icons, harvest tiers, and a check or cross for your held tool. Choose Icons, Text, or Harvestability style.
+- **See contents and progress.** Item-stack previews, fluid tank bars, furnace slots and progress, and brewing progress.
+- **Read entity details.** Health hearts, armor icons, status effects, animal growth, pet owners, and villager professions.
+- **Make the HUD your own.** Position anchors, scale, background opacity, smooth transitions, and option previews in the settings screen.
+- **Use your mod integrations.** WAILA-compatible providers, optional NEI recipe lookup, and add-on support for machine energy and other mod-specific details.
 
 ## Installation
 
-1. Install Minecraft Forge 9.11.1.1345 for Minecraft 1.6.4.
-2. Remove WAILA from the instance and place the Iaspis release JAR in `mods/`.
-3. Press **Numpad +** in game to open Iaspis settings and **Numpad 1** to control the overlay. Change these bindings in Controls.
+Iaspis is in development and has no published release yet. You can [build it from source](#building) to try it.
 
-Forge lists **Iaspis** (`iaspis`) and **Iaspis WAILA Compatibility** (`Waila`). Both entries come from the same JAR. Install Iaspis on the server as well to enable server-side target data.
+1. Install **Minecraft 1.6.4** with **Forge 9.11.1.1345**.
+2. Place the Iaspis JAR in your instance's `mods/` folder. If you use WAILA, replace it with Iaspis.
+3. Launch the game and press **Numpad +** to open the settings.
 
-The settings screen groups options under Style, Behavior and Content. Hover over an option to see an example in the live preview. The option list scrolls independently. Toggle mode keeps the overlay on until you switch it off. Hold mode shows it while you hold the overlay key. Lite mode shows the target name and source. Hold **Numpad 3** for full details, or change the Iaspis details binding in Controls.
+Iaspis works on the client. Install it on the server as well for synchronized inventories, tanks, and additional block and entity details. Machine telemetry requires an add-on providing the corresponding integration.
 
-The overlay fades in when you acquire a target, resizes when you switch targets, and briefly lingers before fading out. You can adjust the linger time, choose which targets appear, and set how the HUD behaves around the boss bar or player list. Appearance options include target icon layout, mod name, position anchors, and auto-scaling for tall tooltips.
+Forge lists both **Iaspis** (`iaspis`) and **Iaspis WAILA Compatibility** (`Waila`). They are supplied by the same JAR.
 
-## Harvesting and inventory
+## Controls
 
-The HUD shows tools that can harvest the target or speed up breaking it. When drops depend on your held tool, a green check or red cross shows whether you can harvest them. Tiers above diamond use a diamond tool icon with a numeric badge. Hold the Iaspis details key to expand container previews. The default limits are 9 stacks normally and 27 in detail mode. You can change both limits, set the number of items per row, sort by stack size, and show item names for small inventories.
+| Default key | Action |
+| --- | --- |
+| **Numpad +** | Open settings |
+| **Numpad 1** | Toggle the HUD; can also be configured as a hold key |
+| **Numpad 2** | Cycle fluid targeting: Off / Sources only / All fluids |
+| **Numpad 3** | Hold for detailed information |
+| **Numpad 4** | Look up recipes with NEI installed |
+| **Numpad 5** | Look up uses with NEI installed |
 
-Set **Harvest style** under Content to **Icons**, **Text**, or **Harvestability**. All three styles use Iaspis's harvest checks. The Harvestability style uses the original symbols and layout for harvest status, Silk Touch and shearing, with separate lines for the effective tool and its tier. Iaspis suppresses the Waila Harvestability 1.1.0 tooltip provider to avoid duplicate hints when that add-on is installed.
+All bindings can be changed in Minecraft's Controls menu. The [user guide](docs/USER_GUIDE.md) covers display modes, content options, narration, and multiplayer settings.
 
-While you break a block, a thin bar at the bottom of the HUD shows your progress. It turns red if your tool cannot harvest the block. You can disable it under Content.
+## For add-on developers
 
-Container previews show item icons and stack counts. In multiplayer, install Iaspis on the server for containers whose contents are unavailable to the client. The `inventory.preview` setting in `config/iaspis.cfg` controls previews on the client and whether the server shares inventory data. Use `harvest.enabled` to toggle harvest hints.
+Use the [Extension API](docs/EXTENSION_API.md) to add text or visual components, read validated server snapshots, extend harvest checks, and supply machine data with client-side unit preferences. Existing mods can also register through the WAILA 1.5.2a API and startup IMC.
 
-## Fluids
-
-Press **Numpad 2** to cycle fluid targeting through Off, Sources only, and All fluids. You can change the mode under Behavior and rebind the key in Controls.
-
-For blocks that expose tanks through Forge, the HUD shows the fluid name, stored amount and capacity in mB, and a fill bar. In Content settings, set **Tank contents** to Off, On, or Only in detailed view. The last mode shows tanks while you hold the details key. Multiplayer tank previews require Iaspis on the server. Server owners can set `I:tank.display=0` in `config/iaspis.cfg` to turn off tank data sharing.
-
-## Lookup and narration
-
-With [NotEnoughItems for 1.6.4](https://www.curseforge.com/minecraft/mc-mods/notenoughitems/files/2207574), aim at a block, dropped item, or item in a frame and press **Numpad 4** for recipes or **Numpad 5** for uses. Both bindings are available in Controls.
-
-Enable **Narrate target names** under Behavior to read the selected target aloud. Narration uses the system speech voice on Windows or macOS and `espeak-ng` or `espeak` on Linux. Available languages depend on installed voices.
-
-## Machine data
-
-Add-ons can register machine data with `MachineProviders.register` during common mod initialization. A provider supplies stored energy and capacity in its native unit, processing progress, or both. Multiplayer machine previews require the provider and Iaspis on the server and client.
-
-Named sources share their Off / On / Only in detailed view mode and server lock with other extensions. They can supply input and output limits per tick. Client projections let an add-on follow each player's unit preference while keeping stored energy, capacity and limits consistent.
-
-## Vanilla block details
-
-Content settings control brewing progress, spawner mobs, hopper locks, note block pitch, jukebox records, and enchanting power. The brewing stand shows its current progress while brewing. Enchanting power counts the usable bookshelf bonus, up to the vanilla cap of 15. Install Iaspis on the multiplayer server to share brewing time, note pitch, the inserted record, and the hopper's lock state.
-
-## Vanilla entity details
-
-The HUD shows animal growth and breeding cooldowns, estimated horse speed and jump height, pet owners, and villager professions. It also shows status effect icons and durations, item frame contents, and dropped item stacks. Content settings control each detail and the maximum number of status effects shown. A multiplayer server with Iaspis supplies dropped item despawn times, active breeding status, and up-to-date mob effects.
-
-## WAILA integrations
-
-Iaspis implements the startup IMC and provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. With ForgeMultipart installed, part providers and decorators are called once for the part under the crosshair. Unrecognized hits do not invoke part callbacks.
-
-Integrations supplied by another mod can register with Iaspis directly. Features that came from handlers bundled with WAILA itself, such as Ender IO capacitor bank telemetry, require a separate add-on.
-
-Options registered by extensions appear under **Extensions** in Iaspis settings and are saved in `config/iaspis.cfg`. Options registered with `addConfigRemote` require Iaspis on the server. To enforce a registered option, set its value in the server’s `display` category and set the same key to `true` in the `waila_server` category. Clients show that setting as server-controlled.
-
-WAILA documentation and item summary hooks are outside the current compatibility scope.
-
-## Iaspis HUD providers
-
-Add-ons can register a client-side provider with `io.github.vulpesstella.iaspis.api.HudProviders`. Register during client initialization. The target type can be a block, tile entity, entity, selected ForgeMultipart part, or an interface implemented by one of them. Install the add-on on the client to show its tooltip changes. Providers work with client-side target data.
-
-```java
-HudProviders.register("example:machine_status", "example.hud.machine_status",
-        MyMachineTile.class, 100, new HudProviders.Provider() {
-    @Override
-    public void update(HudTarget target, boolean detailed, HudProviders.Tooltip tooltip) {
-        if (detailed) tooltip.addLine("Machine serial: " + ((MyMachineTile) target.getTileEntity()).serial());
-    }
-});
-```
-
-Import `HudProviders` and `HudTarget` from `io.github.vulpesstella.iaspis.api`. The highest-priority provider that supplies a name or icon wins that override. Body lines from every provider appear in priority order below the standard details. Equal priorities follow registration order. `hide()` suppresses the HUD for the current target immediately.
-
-Give the provider a stable namespaced ID and a translation key to list it under **Extensions**. Players can choose **Off**, **On**, or **Only in detailed view**. The selection applies to all registrations sharing that ID and is stored in the client's `hud_providers` configuration category. Use the overload without an ID for providers that have no separate setting.
-
-Server owners can lock a provider's mode in the server's `config/iaspis.cfg`. Add its quoted ID under `hud_providers_server` and use `0` for Off, `1` for On, or `2` for Only in detailed view. For example:
-
-```text
-hud_providers_server {
-    I:"example:machine_status"=2
-}
-```
-
-Restart the server to apply edits. The **Extensions** screen shows locked modes as server-controlled. The client keeps its local choice and uses it again after leaving the server.
-
-Use `tooltip.addComponent(component)` to add a visual row. Implement `HudComponent` in the same package and report its width and height in GUI pixels. Draw inside that rectangle from the supplied top-left coordinates. Iaspis lays out component rows in provider order above the inventory grid. Components appear in full and detailed tooltips.
-
-The [HUD example](examples/hud-provider) is a separate Forge mod that adds a signal meter to redstone wire. Build it with `./build.ps1 :examples:hud-provider:build -PwithHudExample=true` on Windows or the same arguments to `./build.sh` on Linux. Install the release JAR from `examples/hud-provider/build/libs/` alongside Iaspis on the client. Aim at redstone dust in the world to see its signal strength. Change **Redstone signal** under **Extensions** to try the provider modes.
-
-Extension API 1 provides resolved multipart targets, contextual harvest providers, validated server detail snapshots, named machine sources with interface matching, and client energy-unit projections. See the [extension API guide](docs/EXTENSION_API.md) for registration examples and fallback rules.
+The [HUD example](examples/hud-provider) demonstrates a redstone signal component. See the [API guide](docs/EXTENSION_API.md#iaspis-hud-providers) for its build command, provider settings, and server locks.
 
 ## Building
 
-The Retrospectum Loom build uses Java 17 for Gradle, Java 8 for compilation, and a Java 7 API baseline. Run `./setup.ps1` followed by `./build.ps1 build` on Windows, or `./setup.sh` and `./build.sh build` on Linux. Use the JAR in `build/libs/` whose name ends in the version number before `.jar`.
+On Windows:
 
-Run `./build.ps1 runClient` or `./build.ps1 runServer` for development launches. On Linux, use `./build.sh` with the same tasks.
+```powershell
+./setup.ps1
+./build.ps1 build
+```
 
-Java sources use Google Java Format 1.28.0 in AOSP style (four-space indentation), managed by Spotless 8.10.3. Run `./build.ps1 spotlessApply` to format them or `./build.ps1 spotlessCheck` to check formatting. On Linux, use `./build.sh` with the same tasks. Formatting covers the mod and HUD example sources. `build` and CI enforce the same rules.
+On Linux:
 
-## Acknowledgments
+```sh
+./setup.sh
+./build.sh build
+```
 
-Iaspis is inspired by [Jade](https://github.com/Snownee/Jade). The legacy API declarations come from [WAILA by ProfMobius](https://github.com/Choonster-Minecraft-Mods/ProfMobius-Waila/tree/d6de00542d58c8cadce2e00d27535e7b259c0ea7) and are distributed under the [Apache License 2.0](src/main/resources/WAILA-LICENSE.txt).
+The build uses Retrospectum Loom with Java 17 for Gradle, Java 8 for compilation, and a Java 7 API baseline. The setup scripts configure the required JDKs. Install the JAR from `build/libs/` that has no `-dev` suffix.
+
+Run `./build.ps1 runClient` or `./build.ps1 runServer` for development launches; use `./build.sh` on Linux. Java formatting uses Spotless with Google Java Format's four-space AOSP style: run `spotlessApply` to format or `spotlessCheck` to check. Formatting is also checked by `build` and CI.
+
+## Credits and license
+
+Inspired by [Jade](https://github.com/Snownee/Jade) by Snownee. The WAILA API declarations come from [WAILA by ProfMobius](https://github.com/Choonster-Minecraft-Mods/ProfMobius-Waila/tree/d6de00542d58c8cadce2e00d27535e7b259c0ea7).
+
+Iaspis is distributed under the [MIT License](LICENSE). The included WAILA declarations retain their [Apache License 2.0](src/main/resources/WAILA-LICENSE.txt).

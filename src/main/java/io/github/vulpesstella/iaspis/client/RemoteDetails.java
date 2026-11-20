@@ -13,7 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.INetworkManager;
 
-/** Connection-bound API 1 snapshots. A late response never changes a newer selection. */
+/** Connection-bound snapshots. A late response never changes a newer selection. */
 final class RemoteDetails {
     private INetworkManager connection;
     private Target context;
