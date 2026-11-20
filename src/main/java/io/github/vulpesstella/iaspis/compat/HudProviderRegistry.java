@@ -22,6 +22,10 @@ public final class HudProviderRegistry {
 
     private HudProviderRegistry() {}
 
+    public static synchronized void registerSetting(String id, String label) {
+        if (!SETTINGS.containsKey(id)) SETTINGS.put(id, label);
+    }
+
     public static synchronized void register(String id, String label, Class<?> type, int priority, HudProviders.Provider provider) {
         if (type == null || provider == null) throw new NullPointerException("HUD target type and provider are required");
         add(id, label, type, priority, provider);

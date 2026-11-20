@@ -5,12 +5,12 @@ import java.util.Map;
 
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
-import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.INetworkManager;
 
 public class CommonProxy {
+    public void receiveDetails(INetworkManager manager,int sequence,NBTTagCompound data) {}
     public void init() {
     }
 
@@ -24,6 +24,6 @@ public class CommonProxy {
 
     public void receiveHudProviderModes(INetworkManager manager, Map<String, DisplayMode> modes) {}
 
-    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks, MachinePreview machine) {
+    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks) {
     }
 }

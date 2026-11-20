@@ -98,6 +98,10 @@ final class Tooltip {
         MachinePreview machine = target.getMachinePreview();
         if (machine.unit != null) energy = machine;
         processing = machine.progress;
+        if (energy.unit != null) {
+            if (energy.maxInput >= 0) lines.add(bodyEnd++, energyLimit("inputLimit",energy.maxInput,energy.unit));
+            if (energy.maxOutput >= 0) lines.add(bodyEnd++, energyLimit("outputLimit",energy.maxOutput,energy.unit));
+        }
         InventoryPreview preview = target.getInventoryPreview();
         boolean showInventory = true;
         if (target.getTileEntity() instanceof TileEntityFurnace && Iaspis.config().getBoolean("furnace.enabled")) {
@@ -363,6 +367,11 @@ final class Tooltip {
         quantities.setMaximumFractionDigits(2);
         return StatCollector.translateToLocalFormatted("iaspis.machine.energyAmount",
                 quantities.format(energy.stored), quantities.format(energy.capacity), energy.unit.name());
+    }
+
+    private static String energyLimit(String key, double value, MachinePreview.EnergyUnit unit) {
+        NumberFormat quantities=NumberFormat.getNumberInstance();quantities.setMaximumFractionDigits(2);
+        return StatCollector.translateToLocalFormatted("iaspis.machine."+key,quantities.format(value),unit.name());
     }
 
     private static String fluidName(Fluid fluid) {

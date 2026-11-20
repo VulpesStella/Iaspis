@@ -10,13 +10,17 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MovingObjectPosition;
 
 final class MultipartResolver {
-    static MultipartPart resolve(TileEntity tile, MovingObjectPosition hit) {
-        if (tile == null) return null;
+    static boolean isMultipart(TileEntity tile) {
+        if (tile == null) return false;
         Class<?> type = tile.getClass();
         while (type != null && !"codechicken.multipart.TileMultipart".equals(type.getName())) {
             type = type.getSuperclass();
         }
-        if (type == null) return null;
+        return type != null;
+    }
+
+    static MultipartPart resolve(TileEntity tile, MovingObjectPosition hit) {
+        if (!isMultipart(tile)) return null;
         try {
             return Members.INSTANCE == null ? null : Members.INSTANCE.resolve(tile, hit);
         } catch (Exception e) {

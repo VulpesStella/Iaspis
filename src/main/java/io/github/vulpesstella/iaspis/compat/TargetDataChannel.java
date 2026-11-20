@@ -15,7 +15,7 @@ import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockHopper;
 import net.minecraft.entity.Entity;
@@ -36,7 +36,6 @@ import net.minecraftforge.fluids.IFluidHandler;
 public final class TargetDataChannel implements IPacketHandler {
     public static final String NAME = "IaspisData";
     public static final String TANK_CAPABILITY = "IaspisTanks";
-    public static final String MACHINE_CAPABILITY = "IaspisMachines";
     public static final String HOPPER_LOCKED = "IaspisHopperLocked";
     private static final int MAX_PACKET = 30000;
     private static final int REQUEST_SIZE = 21;
@@ -51,11 +50,11 @@ public final class TargetDataChannel implements IPacketHandler {
         return NetworkRegistry.instance().isChannelActive(TANK_CAPABILITY, (Player) player);
     }
 
-    public static boolean supportsMachines(EntityPlayer player) {
-        return NetworkRegistry.instance().isChannelActive(MACHINE_CAPABILITY, (Player) player);
+    public static void request(Target target, int sequence) {
+        request(target, sequence, false);
     }
 
-    public static void request(Target target, int sequence) {
+    public static void request(Target target, int sequence, boolean detailed) {
         MovingObjectPosition hit = target.getPosition();
         boolean entity = target.getEntity() != null;
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(REQUEST_SIZE);
@@ -67,6 +66,16 @@ public final class TargetDataChannel implements IPacketHandler {
             out.writeInt(entity ? target.getEntity().entityId : hit.blockX);
             out.writeInt(entity ? 0 : hit.blockY);
             out.writeInt(entity ? 0 : hit.blockZ);
+            if (!entity) {
+                MultipartPart part = target.getMultipartPart();
+                Object source = target.getPreviewSource();
+                out.writeInt(target.getMetadata());
+                out.writeInt(part == null ? -1 : part.getIndex());
+                out.writeUTF(part == null ? "" : part.getType());
+                out.writeBoolean(detailed);
+                out.writeBoolean(source instanceof IInventory && Iaspis.config().getBoolean("inventory.preview"));
+                out.writeBoolean(source instanceof IFluidHandler && Iaspis.config().getTankDisplay().shows(detailed));
+            }
             PacketDispatcher.sendPacketToServer(new Packet250CustomPayload(NAME, bytes.toByteArray()));
         } catch (IOException e) {
             WailaBridge.INSTANCE.report("Could not encode Iaspis target request", e);
@@ -75,6 +84,13 @@ public final class TargetDataChannel implements IPacketHandler {
 
     @Override
     public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
+        if (DetailsChannel.NAME.equals(packet.channel)) {
+            try { DetailsChannel.receive(manager,packet,player);
+            } catch(IOException e){WailaBridge.INSTANCE.report("Invalid detail packet",e);
+            } catch(RuntimeException e){WailaBridge.INSTANCE.report("Could not read detail packet",e);
+            } catch(LinkageError e){WailaBridge.INSTANCE.report("Could not read detail packet",e);}
+            return;
+        }
         if (WailaOptionsChannel.NAME.equals(packet.channel)) {
             try {
                 if (!(player instanceof EntityPlayerMP) || permitRequest((EntityPlayerMP) player)) {
@@ -91,20 +107,13 @@ public final class TargetDataChannel implements IPacketHandler {
             int sequence = input.readInt();
             if (!(player instanceof EntityPlayerMP)) {
                 NBTTagCompound data = CompressedStreamTools.read(input);
-                InventoryPreview inventory = InventoryPreview.EMPTY;
-                List<TankPreview> tanks = Collections.emptyList();
-                MachinePreview machine = MachinePreview.EMPTY;
-                // Older Iaspis servers end the response after the legacy NBT compound.
-                if (input.available() > 0) {
-                    if (!input.readBoolean()) data = null;
-                    inventory = InventoryPreview.read(input);
-                    tanks = TankPreview.read(input);
-                    machine = MachinePreview.read(input);
-                }
-                Iaspis.proxy.receiveTargetData(sequence, data, inventory, tanks, machine);
+                if (!input.readBoolean()) data = null;
+                InventoryPreview inventory = InventoryPreview.read(input);
+                List<TankPreview> tanks = TankPreview.read(input);
+                if (input.available() != 0) throw new IOException("Unexpected target data tail");
+                Iaspis.proxy.receiveTargetData(sequence, data, inventory, tanks);
                 return;
             }
-            if (packet.data.length != REQUEST_SIZE) return;
             EntityPlayerMP sender = (EntityPlayerMP) player;
             int dimension = input.readInt();
             if (sender.dimension != dimension || !permitRequest(sender)) return;
@@ -113,12 +122,17 @@ public final class TargetDataChannel implements IPacketHandler {
             int y = input.readInt();
             int z = input.readInt();
             if (!entity) {
-                sendBlockData(sender, sequence, x, y, z);
+                int metadata = input.readInt(), index = input.readInt();
+                String type = input.readUTF();
+                boolean detailed = input.readBoolean(), inventory = input.readBoolean(), tanks = input.readBoolean();
+                if (index < -1 || type.length() > 128 || input.available() != 0) return;
+                sendBlockData(sender, sequence, x, y, z, metadata, index, type, detailed, inventory, tanks);
                 return;
             }
+            if (input.available() != 0) return;
             NBTTagCompound data = entityData(sender, x);
             if (data != null) sendResponse(sender, sequence, data, InventoryPreview.EMPTY,
-                    Collections.<TankPreview>emptyList(), MachinePreview.EMPTY);
+                    Collections.<TankPreview>emptyList());
         } catch (IOException e) {
             WailaBridge.INSTANCE.report("Invalid Iaspis target data packet", e);
         } catch (RuntimeException e) {
@@ -127,7 +141,7 @@ public final class TargetDataChannel implements IPacketHandler {
     }
 
     private static void sendResponse(EntityPlayerMP player, int sequence, NBTTagCompound tag,
-                                     InventoryPreview inventory, List<TankPreview> tanks, MachinePreview machine) throws IOException {
+                                     InventoryPreview inventory, List<TankPreview> tanks) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(bytes);
         output.writeInt(sequence);
@@ -135,9 +149,8 @@ public final class TargetDataChannel implements IPacketHandler {
         output.writeBoolean(tag != null);
         inventory.write(output);
         TankPreview.write(output, tanks);
-        machine.write(output);
         if (bytes.size() > MAX_PACKET) {
-            if (tag != null) sendResponse(player, sequence, null, inventory, tanks, machine);
+            if (tag != null) sendResponse(player, sequence, null, inventory, tanks);
             return;
         }
         PacketDispatcher.sendPacketToPlayer(new Packet250CustomPayload(NAME, bytes.toByteArray()), (Player) player);
@@ -151,7 +164,9 @@ public final class TargetDataChannel implements IPacketHandler {
         return true;
     }
 
-    private static void sendBlockData(EntityPlayerMP player, int sequence, int x, int y, int z) throws IOException {
+    private static void sendBlockData(EntityPlayerMP player, int sequence, int x, int y, int z,
+                                      int metadata, int index, String type, boolean detailed,
+                                      boolean wantInventory, boolean wantTanks) throws IOException {
         World world = player.worldObj;
         if (player.getDistanceSq(x + 0.5, y + 0.5, z + 0.5) > 64 || !world.blockExists(x, y, z)) return;
         TileEntity tile = world.getBlockTileEntity(x, y, z);
@@ -163,7 +178,7 @@ public final class TargetDataChannel implements IPacketHandler {
         // The brewing stand's selectable base sits near the bottom of the block.
         double hitHeight = block == Block.brewingStand ? 0.0625 : 0.5;
         Vec3 point = Vec3.createVectorHelper(x + 0.5, y + hitHeight, z + 0.5);
-        boolean multipart = WailaBridge.isMultipart(block);
+        boolean multipart = WailaBridge.isMultipart(block) || MultipartResolver.isMultipart(tile);
         MovingObjectPosition hit;
         if (multipart) {
             Vec3 look = player.getLook(1);
@@ -173,6 +188,11 @@ public final class TargetDataChannel implements IPacketHandler {
             hit = world.rayTraceBlocks_do_do(eyes, point, false, true);
         }
         if (!hitsBlock(hit, x, y, z)) return;
+        Target target = new Target(world, player, player, hit, 1, null);
+        MultipartPart part = target.getMultipartPart();
+        if (target.getMetadata() != metadata || (multipart && part == null)) return;
+        if (part == null ? index != -1 || !type.isEmpty() : index != part.getIndex() || !type.equals(part.getType())) return;
+        Object source = target.getPreviewSource();
 
         WailaBridge bridge = WailaBridge.INSTANCE;
         List<String> keys = bridge.syncedKeys(id, block, tile);
@@ -188,9 +208,9 @@ public final class TargetDataChannel implements IPacketHandler {
                     !BlockHopper.getIsBlockNotPoweredFromMetadata(world.getBlockMetadata(x, y, z)));
         }
         InventoryPreview inventory = InventoryPreview.EMPTY;
-        if (tile instanceof IInventory && Iaspis.config().getBoolean("inventory.preview")) {
+        if (wantInventory && source instanceof IInventory && Iaspis.config().getBoolean("inventory.preview")) {
             try {
-                inventory = InventoryPreview.collect(player, block, tile);
+                inventory = InventoryPreview.collect(target);
             } catch (RuntimeException e) {
                 bridge.report("Inventory preview for " + tile.getClass().getName(), e);
             } catch (LinkageError e) {
@@ -198,20 +218,17 @@ public final class TargetDataChannel implements IPacketHandler {
             }
         }
         List<TankPreview> tanks = Collections.emptyList();
-        if (tile instanceof IFluidHandler && Iaspis.config().getTankDisplay() != DisplayMode.OFF
+        if (wantTanks && source instanceof IFluidHandler && Iaspis.config().getTankDisplay().shows(detailed)
                 && supportsTanks(player)) {
             try {
-                tanks = TankPreview.collect((IFluidHandler) tile);
+                tanks = TankPreview.collect(target);
             } catch (RuntimeException e) {
                 bridge.report("Tank preview for " + tile.getClass().getName(), e);
             } catch (LinkageError e) {
                 bridge.report("Tank preview for " + tile.getClass().getName(), e);
             }
         }
-        MachinePreview machine = supportsMachines(player)
-                ? MachineProviders.collect(tile)
-                : MachinePreview.EMPTY;
-        sendResponse(player, sequence, data, inventory, tanks, machine);
+        sendResponse(player, sequence, data, inventory, tanks);
     }
 
     private static NBTTagCompound entityData(EntityPlayerMP player, int id) {

@@ -10,6 +10,12 @@ public final class HudProviders {
     public static int getApiVersion() { return API_VERSION; }
     private HudProviders() {}
 
+    /** Shares a display setting with server data sources without installing a HUD callback. */
+    public static void registerSetting(String id, String label) {
+        validate(id, label);
+        HudProviderRegistry.registerSetting(id, label);
+    }
+
     public interface Provider {
         /** Called while the registered target is aimed at. */
         void update(HudTarget target, boolean detailed, Tooltip tooltip);
@@ -53,7 +59,7 @@ public final class HudProviders {
     }
 
     private static void validate(String id, String label) {
-        if (id == null || !id.matches("[a-z0-9_]+:[a-z0-9_.-]+")) {
+        if (id == null || id.length() > 64 || !id.matches("[a-z0-9_]+:[a-z0-9_.-]+")) {
             throw new IllegalArgumentException("Expected a namespaced HUD provider ID");
         }
         if (label == null || label.trim().isEmpty()) {

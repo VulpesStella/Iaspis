@@ -4,11 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.compat.EntityHudData;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
-import io.github.vulpesstella.iaspis.compat.MachinePreview;
-import io.github.vulpesstella.iaspis.compat.MachineProviders;
 import io.github.vulpesstella.iaspis.compat.Target;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
@@ -21,6 +18,7 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraftforge.fluids.IFluidHandler;
 
 final class RemoteTargetData {
+    final RemoteDetails details = new RemoteDetails();
     private static final long REFRESH = 250000000L;
     private static final long EXPIRE = 1000000000L;
 
@@ -31,17 +29,25 @@ final class RemoteTargetData {
     private NBTTagCompound data;
     private InventoryPreview inventory = InventoryPreview.EMPTY;
     private List<TankPreview> tanks = Collections.emptyList();
-    private MachinePreview machine = MachinePreview.EMPTY;
+    private boolean requestedInventory, requestedTanks;
 
     void apply(Target target, boolean request) {
-        boolean sameTarget = matches(target, requested);
+        apply(target,request,false);
+    }
+
+    void apply(Target target, boolean request, boolean detailed) {
+        details.apply(target,request,detailed);
+        Object source = target.getPreviewSource();
+        boolean preview = source instanceof IInventory && Iaspis.config().getBoolean("inventory.preview");
+        boolean tank = source instanceof IFluidHandler && Iaspis.config().getTankDisplay().shows(detailed)
+                && TargetDataChannel.supportsTanks(target.getPlayer());
+        boolean sameTarget = matches(target, requested) && requestedInventory == preview && requestedTanks == tank;
         if (request && !sameTarget) {
             sequence++;
             requested = null;
             data = null;
             inventory = InventoryPreview.EMPTY;
             tanks = Collections.emptyList();
-            machine = MachinePreview.EMPTY;
         }
         Entity entity = target.getEntity();
         if ((entity == null && target.getTileEntity() == null) || entity instanceof EntityPlayer
@@ -51,34 +57,29 @@ final class RemoteTargetData {
         boolean fresh = sameTarget && now - dataTime < EXPIRE;
         if (fresh && data != null) target.setRemoteData(data);
         WailaBridge bridge = WailaBridge.INSTANCE;
-        boolean preview = target.getTileEntity() instanceof IInventory && Iaspis.config().getBoolean("inventory.preview");
         target.setInventoryPreview(fresh && preview ? inventory : InventoryPreview.EMPTY);
-        boolean tank = target.getTileEntity() instanceof IFluidHandler && Iaspis.config().getTankDisplay() != DisplayMode.OFF
-                && TargetDataChannel.supportsTanks(target.getPlayer());
         if (fresh && tank) target.setTankPreview(tanks);
-        boolean machinePreview = TargetDataChannel.supportsMachines(target.getPlayer())
-                && MachineProviders.supports(target.getTileEntity());
-        if (fresh && machinePreview) target.setMachinePreview(machine);
-        if (!request || now - nextRequest < 0 || (!preview && !tank && !machinePreview
+        if (!request || now - nextRequest < 0 || (!preview && !tank
                 && !EntityHudData.needsSync(entity) && bridge.syncedKeys(target.getBlockID(),
                 entity == null ? target.getBlock() : entity, target.getTileEntity()).isEmpty())) return;
 
         requested = target;
+        requestedInventory = preview;
+        requestedTanks = tank;
         nextRequest = now + REFRESH;
-        TargetDataChannel.request(target, ++sequence);
+        TargetDataChannel.request(target, ++sequence, detailed);
     }
 
-    void receive(int response, NBTTagCompound tag, InventoryPreview preview, List<TankPreview> tanks, MachinePreview machine) {
+    void receive(int response, NBTTagCompound tag, InventoryPreview preview, List<TankPreview> tanks) {
         if (response == sequence && requested != null) {
             data = tag;
             inventory = preview;
             this.tanks = tanks;
-            this.machine = machine;
             dataTime = System.nanoTime();
         }
     }
 
-    private static boolean matches(Target a, Target b) {
+    static boolean matches(Target a, Target b) {
         if (b == null || a.getWorld() != b.getWorld() || a.getPlayer() != b.getPlayer()) return false;
         if (a.getEntity() != null || b.getEntity() != null) return a.getEntity() == b.getEntity();
         MovingObjectPosition left = a.getPosition();

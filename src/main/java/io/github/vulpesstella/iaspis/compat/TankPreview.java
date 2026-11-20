@@ -27,7 +27,12 @@ public final class TankPreview {
         this.capacity = capacity;
     }
 
-    static List<TankPreview> collect(IFluidHandler handler) {
+    static List<TankPreview> collect(Target target) {
+        Object source = target.getPreviewSource();
+        return source instanceof IFluidHandler ? collect((IFluidHandler) source) : Collections.<TankPreview>emptyList();
+    }
+
+    private static List<TankPreview> collect(IFluidHandler handler) {
         List<TankPreview> tanks = new ArrayList<TankPreview>();
         add(tanks, handler.getTankInfo(ForgeDirection.UNKNOWN), 0);
         if (tanks.isEmpty()) {

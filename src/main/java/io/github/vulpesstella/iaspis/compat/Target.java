@@ -6,6 +6,9 @@ import java.util.List;
 import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.api.MultipartTarget;
 import io.github.vulpesstella.iaspis.api.MultipartPart;
+import io.github.vulpesstella.iaspis.api.SnapshotTarget;
+import io.github.vulpesstella.iaspis.api.MachineTarget;
+import io.github.vulpesstella.iaspis.api.MachineProjections;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaEntityAccessor;
 import net.minecraft.block.Block;
@@ -24,7 +27,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
 
-public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, MultipartTarget {
+public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, MultipartTarget, SnapshotTarget, MachineTarget {
     private final World world;
     private final EntityPlayer player;
     private final MovingObjectPosition hit;
@@ -42,10 +45,25 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
     private InventoryPreview inventory;
     private List<TankPreview> tanks = Collections.emptyList();
     private MachinePreview machine = MachinePreview.EMPTY;
+    private String machineId;
+    private NBTTagCompound snapshots;
 
-    public MachinePreview getMachinePreview() { return machine; }
+    public MachinePreview getMachinePreview() { return MachineProjections.project(this, machineId, machine); }
+    public String getMachineProviderId() { return machineId; }
 
-    public void setMachinePreview(MachinePreview machine) { this.machine = machine; }
+    public void setMachinePreview(MachinePreview machine) {
+        setMachinePreview(null, machine);
+    }
+
+    public void setMachinePreview(String id, MachinePreview machine) {
+        this.machineId = id;
+        this.machine = machine;
+    }
+
+    public void setSnapshots(NBTTagCompound snapshots) { this.snapshots = snapshots; }
+    public NBTTagCompound getSnapshot(String id) {
+        return snapshots == null || !snapshots.hasKey(id) ? null : (NBTTagCompound) snapshots.getCompoundTag(id).copy();
+    }
 
     public List<TankPreview> getTankPreview() { return tanks; }
 
@@ -87,6 +105,12 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
     public ItemStack getStack() { return stack; }
     public MultipartPart getMultipartPart() { return part; }
 
+    /** Generic capabilities belong to the selected part, never its aggregate container. */
+    public Object getPreviewSource() {
+        if (part != null) return part.getPart();
+        return WailaBridge.isMultipart(block) || MultipartResolver.isMultipart(tile) ? null : tile;
+    }
+
     public HarvestState getHarvestState() {
         if (harvest == null) harvest = new HarvestState(this);
         return harvest;
@@ -112,7 +136,7 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, M
         if (inventory != null) return inventory;
         if (Iaspis.config().getBoolean("inventory.preview")) {
             try {
-                return InventoryPreview.collect(player, block, tile);
+                return InventoryPreview.collect(this);
             } catch (RuntimeException e) {
                 WailaBridge.INSTANCE.report("Local inventory preview", e);
             } catch (LinkageError e) {

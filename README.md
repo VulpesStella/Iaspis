@@ -42,6 +42,8 @@ Enable **Narrate target names** under Behavior to read the selected target aloud
 
 Add-ons can register machine data with `MachineProviders.register` during common mod initialization. A provider supplies stored energy and capacity in its native unit, processing progress, or both. Multiplayer machine previews require the provider and Iaspis on the server and client.
 
+Named sources share their Off / On / Only in detailed view mode and server lock with other extensions. They can supply input and output limits per tick. Client projections let an add-on follow each player's unit preference while keeping stored energy, capacity and limits consistent.
+
 ## Vanilla block details
 
 Content settings control brewing progress, spawner mobs, hopper locks, note block pitch, jukebox records, and enchanting power. The brewing stand shows its current progress while brewing. Enchanting power counts the usable bookshelf bonus, up to the vanilla cap of 15. Install Iaspis on the multiplayer server to share brewing time, note pitch, the inserted record, and the hopper's lock state.
@@ -92,7 +94,7 @@ Use `tooltip.addComponent(component)` to add a visual row. Implement `HudCompone
 
 The [HUD example](examples/hud-provider) is a separate Forge mod that adds a signal meter to redstone wire. Build it with `./build.ps1 :examples:hud-provider:build -PwithHudExample=true` on Windows or the same arguments to `./build.sh` on Linux. Install the release JAR from `examples/hud-provider/build/libs/` alongside Iaspis on the client. Aim at redstone dust in the world to see its signal strength. Change **Redstone signal** under **Extensions** to try the provider modes.
 
-Extension API 1 adds a resolved multipart target, registrations by part type ID, and contextual harvest providers with independent tool-class levels. See the [extension API guide](docs/EXTENSION_API.md) for registration examples, fallback rules, and capability checks.
+Extension API 1 provides resolved multipart targets, contextual harvest providers, validated server detail snapshots, named machine sources with interface matching, and client energy-unit projections. See the [extension API guide](docs/EXTENSION_API.md) for registration examples and fallback rules.
 
 ## Building
 

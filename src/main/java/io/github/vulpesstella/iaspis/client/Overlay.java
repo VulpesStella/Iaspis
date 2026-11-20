@@ -742,7 +742,7 @@ public final class Overlay extends Gui {
             if (stack.getItem() == null) stack = null;
         }
         Target target = new Target(game.theWorld, game.thePlayer, game.renderViewEntity, hit, partialTicks, stack);
-        remote.apply(target, request);
+        remote.apply(target, request, detailsKey.keyCode != 0 && GameSettings.isKeyDown(detailsKey));
         return target;
     }
 

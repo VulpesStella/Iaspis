@@ -40,12 +40,16 @@ public final class InventoryPreview {
         this.furnaceSlots = Collections.unmodifiableList(furnaceSlots);
     }
 
-    static InventoryPreview collect(EntityPlayer player, Block block, TileEntity tile) {
-        if (!(tile instanceof IInventory) || player == null) return EMPTY;
+    static InventoryPreview collect(Target target) {
+        EntityPlayer player = target.getPlayer();
+        Block block = target.getBlock();
+        TileEntity tile = target.getTileEntity();
+        Object source = target.getPreviewSource();
+        if (!(source instanceof IInventory) || player == null) return EMPTY;
         World world = player.worldObj;
-        IInventory inventory = block == Block.chest || block == Block.chestTrapped
+        IInventory inventory = source == tile && (block == Block.chest || block == Block.chestTrapped)
                 ? ((BlockChest) block).getInventory(world, tile.xCoord, tile.yCoord, tile.zCoord)
-                : (IInventory) tile;
+                : (IInventory) source;
         if (inventory == null || !inventory.isUseableByPlayer(player)) return EMPTY;
 
         List<ItemStack> icons = new ArrayList<ItemStack>();
@@ -53,7 +57,7 @@ public final class InventoryPreview {
         int size = inventory.getSizeInventory();
         for (int i = 0; i < Math.min(size, SCAN_LIMIT); i++) {
             ItemStack stack = previewStack(inventory.getStackInSlot(i));
-            if (tile instanceof TileEntityFurnace && i < FURNACE_SLOT_COUNT) furnaceSlots.add(stack);
+            if (source instanceof TileEntityFurnace && i < FURNACE_SLOT_COUNT) furnaceSlots.add(stack);
             if (stack == null) continue;
             if (icons.size() == DETAIL_LIMIT) return new InventoryPreview(icons, true);
             icons.add(stack);

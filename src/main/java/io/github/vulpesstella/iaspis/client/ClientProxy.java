@@ -12,7 +12,6 @@ import io.github.vulpesstella.iaspis.Iaspis;
 import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.CommonProxy;
 import io.github.vulpesstella.iaspis.compat.InventoryPreview;
-import io.github.vulpesstella.iaspis.compat.MachinePreview;
 import io.github.vulpesstella.iaspis.compat.TankPreview;
 import io.github.vulpesstella.iaspis.compat.TargetDataChannel;
 import net.minecraft.client.Minecraft;
@@ -26,6 +25,11 @@ import org.lwjgl.input.Keyboard;
 public final class ClientProxy extends CommonProxy {
     private final RemoteTargetData remote = new RemoteTargetData();
     private RemoteWailaOptions remoteOptions;
+
+    @Override
+    public void receiveDetails(INetworkManager manager,int sequence,NBTTagCompound data) {
+        remote.details.receive(manager,sequence,data);
+    }
 
     @Override
     public void init() {
@@ -104,7 +108,7 @@ public final class ClientProxy extends CommonProxy {
     }
 
     @Override
-    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks, MachinePreview machine) {
-        remote.receive(sequence, data, inventory, tanks, machine);
+    public void receiveTargetData(int sequence, NBTTagCompound data, InventoryPreview inventory, List<TankPreview> tanks) {
+        remote.receive(sequence, data, inventory, tanks);
     }
 }
