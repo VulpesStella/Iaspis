@@ -17,6 +17,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage;
 import io.github.vulpesstella.iaspis.Iaspis;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
 import mcp.mobius.waila.api.IWailaBlockDecorator;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataProvider;
@@ -25,9 +26,7 @@ import mcp.mobius.waila.api.IWailaFMPDecorator;
 import mcp.mobius.waila.api.IWailaFMPProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 import mcp.mobius.waila.api.IWailaSummaryProvider;
-import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.StatCollector;
 
 @SuppressWarnings("rawtypes") // The WAILA 1.5.2a registrar uses raw Class parameters.
@@ -162,29 +161,9 @@ public final class WailaBridge implements IWailaRegistrar, IWailaConfigHandler {
     }
 
     public List<MultipartAccessor> multipart(Target target) {
-        if (!hasMultipartProviders() || !isMultipart(target.getBlock())) return Collections.emptyList();
-        NBTTagCompound tag;
-        try {
-            tag = target.getNBTData();
-        } catch (RuntimeException e) {
-            report("Could not read multipart data", e);
-            return Collections.emptyList();
-        } catch (LinkageError e) {
-            report("Could not read multipart data", e);
-            return Collections.emptyList();
-        }
-        if (tag == null || !(tag.getTag("parts") instanceof NBTTagList)) return Collections.emptyList();
-        NBTTagList list = tag.getTagList("parts");
-        List<MultipartAccessor> parts = new ArrayList<MultipartAccessor>(list.tagCount());
-        for (int i = 0; i < list.tagCount(); i++) {
-            NBTBase entry = list.tagAt(i);
-            if (entry instanceof NBTTagCompound) {
-                NBTTagCompound part = (NBTTagCompound) entry;
-                String id = part.getString("id");
-                if (!id.isEmpty()) parts.add(new MultipartAccessor(target, id, part));
-            }
-        }
-        return parts;
+        MultipartPart part = target.getMultipartPart();
+        if (!hasMultipartProviders() || part == null) return Collections.emptyList();
+        return Collections.singletonList(new MultipartAccessor(target, part.getType(), part.getSnapshot()));
     }
 
     public List<IWailaFMPProvider> multipartProviders(Section section, String id) {

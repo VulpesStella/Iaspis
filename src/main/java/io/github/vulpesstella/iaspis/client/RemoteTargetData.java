@@ -36,6 +36,7 @@ final class RemoteTargetData {
     void apply(Target target, boolean request) {
         boolean sameTarget = matches(target, requested);
         if (request && !sameTarget) {
+            sequence++;
             requested = null;
             data = null;
             inventory = InventoryPreview.EMPTY;
@@ -83,6 +84,7 @@ final class RemoteTargetData {
         MovingObjectPosition left = a.getPosition();
         MovingObjectPosition right = b.getPosition();
         return left.blockX == right.blockX && left.blockY == right.blockY && left.blockZ == right.blockZ
+                && a.getMetadata() == b.getMetadata() && a.sameMultipartSelection(b)
                 && a.getBlock() == b.getBlock() && a.getTileEntity() == b.getTileEntity();
     }
 }

@@ -164,12 +164,13 @@ public final class TargetDataChannel implements IPacketHandler {
         double hitHeight = block == Block.brewingStand ? 0.0625 : 0.5;
         Vec3 point = Vec3.createVectorHelper(x + 0.5, y + hitHeight, z + 0.5);
         boolean multipart = WailaBridge.isMultipart(block);
-        MovingObjectPosition hit = world.rayTraceBlocks_do_do(eyes, point, false, !multipart);
-        if (!hitsBlock(hit, x, y, z) && multipart) {
-            // Thin multipart covers can miss a ray aimed at the center of their container.
+        MovingObjectPosition hit;
+        if (multipart) {
             Vec3 look = player.getLook(1);
             Vec3 end = eyes.addVector(look.xCoord * 8, look.yCoord * 8, look.zCoord * 8);
             hit = world.rayTraceBlocks_do_do(eyes, end, false, false);
+        } else {
+            hit = world.rayTraceBlocks_do_do(eyes, point, false, true);
         }
         if (!hitsBlock(hit, x, y, z)) return;
 

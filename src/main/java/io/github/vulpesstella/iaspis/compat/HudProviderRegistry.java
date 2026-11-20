@@ -12,6 +12,8 @@ import io.github.vulpesstella.iaspis.IaspisConfig.DisplayMode;
 import io.github.vulpesstella.iaspis.api.HudComponent;
 import io.github.vulpesstella.iaspis.api.HudProviders;
 import io.github.vulpesstella.iaspis.api.HudTarget;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
+import io.github.vulpesstella.iaspis.api.MultipartTarget;
 import net.minecraft.item.ItemStack;
 
 public final class HudProviderRegistry {
@@ -22,6 +24,15 @@ public final class HudProviderRegistry {
 
     public static synchronized void register(String id, String label, Class<?> type, int priority, HudProviders.Provider provider) {
         if (type == null || provider == null) throw new NullPointerException("HUD target type and provider are required");
+        add(id, label, type, priority, provider);
+    }
+
+    public static synchronized void registerMultipart(String id, String label, String type, int priority, HudProviders.Provider provider) {
+        if (provider == null) throw new NullPointerException("A HUD provider is required");
+        add(id, label, type, priority, provider);
+    }
+
+    private static void add(String id, String label, Object type, int priority, HudProviders.Provider provider) {
         List<Registration> updated = new ArrayList<Registration>(registrations);
         updated.add(new Registration(id, type, priority, provider));
         Collections.sort(updated, new Comparator<Registration>() {
@@ -73,11 +84,11 @@ public final class HudProviderRegistry {
 
     private static final class Registration {
         final String id;
-        final Class<?> type;
+        final Object type;
         final int priority;
         final HudProviders.Provider provider;
 
-        Registration(String id, Class<?> type, int priority, HudProviders.Provider provider) {
+        Registration(String id, Object type, int priority, HudProviders.Provider provider) {
             this.id = id;
             this.type = type;
             this.priority = priority;
@@ -85,8 +96,11 @@ public final class HudProviderRegistry {
         }
 
         boolean matches(HudTarget target) {
-            return type.isInstance(target.getBlock()) || type.isInstance(target.getTileEntity())
-                    || type.isInstance(target.getEntity());
+            MultipartPart part = target instanceof MultipartTarget ? ((MultipartTarget) target).getMultipartPart() : null;
+            if (type instanceof String) return part != null && type.equals(part.getType());
+            Class<?> targetType = (Class<?>) type;
+            return targetType.isInstance(target.getBlock()) || targetType.isInstance(target.getTileEntity())
+                    || targetType.isInstance(target.getEntity()) || (part != null && targetType.isInstance(part.getPart()));
         }
     }
 

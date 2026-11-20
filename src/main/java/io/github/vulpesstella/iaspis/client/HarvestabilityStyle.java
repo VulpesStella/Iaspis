@@ -46,7 +46,7 @@ final class HarvestabilityStyle {
             if (tool.level >= 0) {
                 if (tiers.length() > 0) tiers.append(RESET).append(", ");
                 if (hint.icons.size() > 1) tiers.append(toolName).append(' ');
-                tiers.append(color).append(tierName(tool.level));
+                tiers.append(color).append(tool.levelName == null ? tierName(tool.level) : tool.levelName);
             }
         }
         lines.add(translate("effectiveTool") + " : " + tools);

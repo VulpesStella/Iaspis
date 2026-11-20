@@ -5,6 +5,9 @@ import net.minecraft.item.ItemStack;
 
 /** Client-side registrations for the in-world Iaspis HUD. */
 public final class HudProviders {
+    public static final int API_VERSION = 1;
+    /** Runtime capability check; unlike a constant, this call is not inlined into add-ons. */
+    public static int getApiVersion() { return API_VERSION; }
     private HudProviders() {}
 
     public interface Provider {
@@ -24,7 +27,7 @@ public final class HudProviders {
     }
 
     /**
-     * Call during client mod initialization. The type can match a block, tile entity, or entity,
+     * Call during client mod initialization. The type can match a block, tile entity, entity or selected multipart,
      * including subclasses and implemented interfaces. Higher priorities run first and win name
      * and icon overrides. Ties follow registration order.
      */
@@ -38,12 +41,23 @@ public final class HudProviders {
      * the same setting. The label is translated using the client's language.
      */
     public static void register(String id, String label, Class<?> type, int priority, Provider provider) {
+        validate(id, label);
+        HudProviderRegistry.register(id, label, type, priority, provider);
+    }
+
+    /** Register for the uniquely selected ForgeMultipart type ID, with the usual display setting. */
+    public static void registerMultipart(String id, String label, String partType, int priority, Provider provider) {
+        validate(id, label);
+        if (partType == null || partType.isEmpty()) throw new IllegalArgumentException("A multipart type ID is required");
+        HudProviderRegistry.registerMultipart(id, label, partType, priority, provider);
+    }
+
+    private static void validate(String id, String label) {
         if (id == null || !id.matches("[a-z0-9_]+:[a-z0-9_.-]+")) {
             throw new IllegalArgumentException("Expected a namespaced HUD provider ID");
         }
         if (label == null || label.trim().isEmpty()) {
             throw new IllegalArgumentException("A HUD provider label is required");
         }
-        HudProviderRegistry.register(id, label, type, priority, provider);
     }
 }

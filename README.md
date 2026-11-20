@@ -52,7 +52,7 @@ The HUD shows animal growth and breeding cooldowns, estimated horse speed and ju
 
 ## WAILA integrations
 
-Iaspis implements the startup IMC and provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. With ForgeMultipart installed, part providers and decorators are called for the parts in the targeted block.
+Iaspis implements the startup IMC and provider interfaces from WAILA 1.5.2a. Existing integrations can send `register` and `addconfig` messages to `Waila`. Block and entity providers can supply tooltip text, override display targets, and request selected NBT keys. Block decorators can draw in the world. With ForgeMultipart installed, part providers and decorators are called once for the part under the crosshair. Unrecognized hits do not invoke part callbacks.
 
 Integrations supplied by another mod can register with Iaspis directly. Features that came from handlers bundled with WAILA itself, such as Ender IO capacitor bank telemetry, require a separate add-on.
 
@@ -62,7 +62,7 @@ WAILA documentation and item summary hooks are outside the current compatibility
 
 ## Iaspis HUD providers
 
-Add-ons can register a client-side provider with `io.github.vulpesstella.iaspis.api.HudProviders`. Register during client initialization. The target type can be a block, tile entity, entity, or an interface implemented by one of them. Install the add-on on the client to show its tooltip changes. Providers work with client-side target data.
+Add-ons can register a client-side provider with `io.github.vulpesstella.iaspis.api.HudProviders`. Register during client initialization. The target type can be a block, tile entity, entity, selected ForgeMultipart part, or an interface implemented by one of them. Install the add-on on the client to show its tooltip changes. Providers work with client-side target data.
 
 ```java
 HudProviders.register("example:machine_status", "example.hud.machine_status",
@@ -91,6 +91,8 @@ Restart the server to apply edits. The **Extensions** screen shows locked modes 
 Use `tooltip.addComponent(component)` to add a visual row. Implement `HudComponent` in the same package and report its width and height in GUI pixels. Draw inside that rectangle from the supplied top-left coordinates. Iaspis lays out component rows in provider order above the inventory grid. Components appear in full and detailed tooltips.
 
 The [HUD example](examples/hud-provider) is a separate Forge mod that adds a signal meter to redstone wire. Build it with `./build.ps1 :examples:hud-provider:build -PwithHudExample=true` on Windows or the same arguments to `./build.sh` on Linux. Install the release JAR from `examples/hud-provider/build/libs/` alongside Iaspis on the client. Aim at redstone dust in the world to see its signal strength. Change **Redstone signal** under **Extensions** to try the provider modes.
+
+Extension API 1 adds a resolved multipart target, registrations by part type ID, and contextual harvest providers with independent tool-class levels. See the [extension API guide](docs/EXTENSION_API.md) for registration examples, fallback rules, and capability checks.
 
 ## Building
 

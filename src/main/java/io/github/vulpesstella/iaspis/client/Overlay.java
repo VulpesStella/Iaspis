@@ -68,6 +68,7 @@ public final class Overlay extends Gui {
     private final IntBuffer scissor = BufferUtils.createIntBuffer(16);
     private World lastWorld;
     private Tooltip lastTooltip;
+    private Target lastTarget;
     private PreviewSample lastPreview;
 
     Overlay(RemoteTargetData remote, KeyBinding showKey, KeyBinding detailsKey) {
@@ -98,6 +99,8 @@ public final class Overlay extends Gui {
             try {
                 target = target(event.partialTicks, true, true);
                 if (target != null) {
+                    if (lastTarget != null && !target.sameMultipartSelection(lastTarget)) resetTransition();
+                    lastTarget = target;
                     boolean details = detailsKey.keyCode != 0 && GameSettings.isKeyDown(detailsKey);
                     boolean lite = NumberOption.MODE.get() == HudSettings.LITE && !details;
                     HudProviderRegistry.Changes changes = HudProviderRegistry.collect(target, details);
@@ -128,6 +131,7 @@ public final class Overlay extends Gui {
         transition.reset();
         fade.reset();
         lastTooltip = null;
+        lastTarget = null;
     }
 
     private void updateNarration(Target target) {
@@ -564,6 +568,11 @@ public final class Overlay extends Gui {
     private void drawHarvest(HarvestHint harvest, int left, int top) {
         int x = left;
         for (HarvestHint.ToolIcon icon : harvest.icons) {
+            if (icon.stack == null) {
+                game.fontRenderer.drawStringWithShadow(icon.text(), x, top + 5, 0xffffff);
+                x += toolWidth(icon);
+                continue;
+            }
             drawItem(icon.stack, x, top);
             if (!icon.levelBadge.isEmpty()) {
                 game.fontRenderer.drawStringWithShadow(icon.levelBadge, x + SLOT_SIZE, top + 5, 0xffffff);
@@ -586,6 +595,7 @@ public final class Overlay extends Gui {
     }
 
     private int toolWidth(HarvestHint.ToolIcon icon) {
+        if (icon.stack == null) return game.fontRenderer.getStringWidth(icon.text()) + 3;
         return SLOT_SIZE + (icon.levelBadge.isEmpty() ? 0 : game.fontRenderer.getStringWidth(icon.levelBadge) + 3);
     }
 

@@ -4,7 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.vulpesstella.iaspis.Iaspis;
-import io.github.vulpesstella.iaspis.api.HudTarget;
+import io.github.vulpesstella.iaspis.api.MultipartTarget;
+import io.github.vulpesstella.iaspis.api.MultipartPart;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 import mcp.mobius.waila.api.IWailaEntityAccessor;
 import net.minecraft.block.Block;
@@ -23,7 +24,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
 
-public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, HudTarget {
+public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, MultipartTarget {
     private final World world;
     private final EntityPlayer player;
     private final MovingObjectPosition hit;
@@ -33,6 +34,8 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, H
     private final TileEntity tile;
     private final int metadata;
     private final ItemStack stack;
+    private final MultipartPart part;
+    private HarvestState harvest;
     private NBTTagCompound nbt;
     private boolean remoteNbt;
     private boolean readNbt;
@@ -59,6 +62,7 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, H
         block = isBlock ? Block.blocksList[world.getBlockId(hit.blockX, hit.blockY, hit.blockZ)] : null;
         tile = isBlock ? world.getBlockTileEntity(hit.blockX, hit.blockY, hit.blockZ) : null;
         metadata = isBlock ? world.getBlockMetadata(hit.blockX, hit.blockY, hit.blockZ) : 0;
+        part = MultipartResolver.resolve(tile, hit);
         Entity entity = hit.entityHit;
         double x = entity == null ? hit.blockX : entity.posX;
         double y = entity == null ? hit.blockY : entity.posY;
@@ -81,6 +85,16 @@ public final class Target implements IWailaDataAccessor, IWailaEntityAccessor, H
     public TileEntity getTileEntity() { return tile; }
     public Entity getEntity() { return hit.entityHit; }
     public ItemStack getStack() { return stack; }
+    public MultipartPart getMultipartPart() { return part; }
+
+    public HarvestState getHarvestState() {
+        if (harvest == null) harvest = new HarvestState(this);
+        return harvest;
+    }
+
+    public boolean sameMultipartSelection(Target other) {
+        return part == null ? other.part == null : part.sameSelection(other.part);
+    }
 
     public void setRemoteData(NBTTagCompound data) {
         nbt = data;
