@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Use ASCII parentheses in Chinese harvest-tier and server-lock labels to avoid Minecraft 1.6.4's full-width glyph rendering defect hiding subsequent text.
 - Scope generic tank and inventory previews to the selected multipart and validate its selection on the server, preventing covers from showing another part's contents.
 - Dispatch WAILA multipart providers and decorators only for the selected runtime part, independently of tile NBT ordering.
 - Invalidate cached target data when multipart selection or block metadata changes, and trace server-side multipart targets along the player's sight line.
